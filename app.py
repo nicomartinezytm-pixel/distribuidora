@@ -5,12 +5,12 @@ import os
 
 app = Flask(__name__)
 
-# -------- BASE DE DATOS --------
+# -------- DB --------
 def get_db():
     path = os.path.join(os.getcwd(), "db.db")
     return sqlite3.connect(path)
 
-# 🔥 CREAR TABLAS AUTOMÁTICAMENTE (IMPORTANTE PARA RENDER)
+# 🔥 CREAR TABLAS AUTOMÁTICO (CLAVE PARA RENDER)
 db = get_db()
 
 db.execute("CREATE TABLE IF NOT EXISTS productos (id INTEGER PRIMARY KEY, nombre TEXT, precio REAL, stock INTEGER, tipo_precio TEXT)")
@@ -20,7 +20,7 @@ db.execute("CREATE TABLE IF NOT EXISTS detalle_venta (id INTEGER PRIMARY KEY AUT
 
 db.commit()
 
-# -------- INICIO --------
+# -------- HOME --------
 @app.route("/")
 def index():
     db = get_db()
@@ -116,7 +116,3 @@ def dashboard():
                            ranking=ranking,
                            nombres=nombres,
                            totales=totales)
-
-# -------- RUN LOCAL --------
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
