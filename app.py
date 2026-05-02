@@ -1,12 +1,26 @@
 from flask import Flask, render_template, request, redirect
 import sqlite3
 import json
+import os
 
 app = Flask(__name__)
 
+# -------- BASE DE DATOS --------
 def get_db():
-    return sqlite3.connect("db.db")
+    path = os.path.join(os.getcwd(), "db.db")
+    return sqlite3.connect(path)
 
+# 🔥 CREAR TABLAS AUTOMÁTICAMENTE (IMPORTANTE PARA RENDER)
+db = get_db()
+
+db.execute("CREATE TABLE IF NOT EXISTS productos (id INTEGER PRIMARY KEY, nombre TEXT, precio REAL, stock INTEGER, tipo_precio TEXT)")
+db.execute("CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY, nombre TEXT, telefono TEXT, direccion TEXT)")
+db.execute("CREATE TABLE IF NOT EXISTS ventas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente_id INTEGER, total REAL)")
+db.execute("CREATE TABLE IF NOT EXISTS detalle_venta (id INTEGER PRIMARY KEY AUTOINCREMENT, venta_id INTEGER, producto_id INTEGER, cantidad INTEGER)")
+
+db.commit()
+
+# -------- INICIO --------
 @app.route("/")
 def index():
     db = get_db()
@@ -14,6 +28,7 @@ def index():
     clientes = db.execute("SELECT * FROM clientes").fetchall()
     return render_template("index.html", productos=productos, clientes=clientes)
 
+# -------- PRODUCTOS --------
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
@@ -37,6 +52,7 @@ def editar_producto(id):
     db.commit()
     return redirect("/")
 
+# -------- CLIENTES --------
 @app.route("/agregar_cliente", methods=["POST"])
 def agregar_cliente():
     db = get_db()
@@ -94,17 +110,13 @@ def dashboard():
     nombres = [r[0] for r in ranking]
     totales = [r[1] for r in ranking]
 
-    return render_template("dashboard.html", total=total, ventas=ventas, ranking=ranking, nombres=nombres, totales=totales)
+    return render_template("dashboard.html",
+                           total=total,
+                           ventas=ventas,
+                           ranking=ranking,
+                           nombres=nombres,
+                           totales=totales)
 
-# -------- INIT --------
+# -------- RUN LOCAL --------
 if __name__ == "__main__":
-    db = get_db()
-
-    db.execute("CREATE TABLE IF NOT EXISTS productos (id INTEGER PRIMARY KEY, nombre TEXT, precio REAL, stock INTEGER, tipo_precio TEXT)")
-    db.execute("CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY, nombre TEXT, telefono TEXT, direccion TEXT)")
-    db.execute("CREATE TABLE IF NOT EXISTS ventas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente_id INTEGER, total REAL)")
-    db.execute("CREATE TABLE IF NOT EXISTS detalle_venta (id INTEGER PRIMARY KEY AUTOINCREMENT, venta_id INTEGER, producto_id INTEGER, cantidad INTEGER)")
-
-    db.commit()
-
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
