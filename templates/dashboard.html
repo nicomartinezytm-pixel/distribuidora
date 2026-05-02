@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h1>Dashboard</h1>
+
+<h2>Total: ${{total}}</h2>
+<h2>Ventas: {{ventas}}</h2>
+
+<canvas id="g"></canvas>
+
+<script>
+new Chart(document.getElementById("g"),{
+type:"bar",
+data:{
+labels: {{nombres|tojson}},
+datasets:[{data: {{totales|tojson}}}]
+}
+})
+</script>
+
+</body>
+</html>

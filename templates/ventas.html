@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ventas</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h1>🧾 Venta</h1>
+
+<div style="text-align:center;">
+    <a href="/"><button>⬅ Volver</button></a>
+</div>
+
+<div class="container">
+
+<div class="card">
+<h3>Cliente</h3>
+<select id="cliente">
+{% for c in clientes %}
+<option value="{{c[0]}}">{{c[1]}}</option>
+{% endfor %}
+</select>
+</div>
+
+<div class="card">
+<h3>Productos</h3>
+<div id="productos">
+{% for p in productos %}
+<button onclick="add({{p[0]}}, '{{p[1]}}', {{p[2]}})">
+{{p[1]}}<br>$ {{p[2]}}
+</button>
+{% endfor %}
+</div>
+</div>
+
+<div class="card">
+<h3>Carrito</h3>
+<ul id="carrito"></ul>
+<h2 id="total">Total: 0</h2>
+</div>
+
+<div class="card">
+<form method="POST" action="/finalizar_venta" onsubmit="prep()">
+<input type="hidden" name="cliente" id="c">
+<input type="hidden" name="total" id="t">
+<input type="hidden" name="carrito" id="car">
+<button style="width:100%; font-size:20px;">💰 Finalizar Venta</button>
+</form>
+</div>
+
+</div>
+
+<script>
+let carrito=[]
+let total=0
+
+function add(id,n,p){
+let c=prompt("Cantidad:",1)
+if(!c)return
+c=parseInt(c)
+
+carrito.push({id:id,nombre:n,precio:p,cantidad:c})
+total+=p*c
+render()
+}
+
+function render(){
+let ul=document.getElementById("carrito")
+ul.innerHTML=""
+carrito.forEach((i,index)=>{
+ul.innerHTML+=`
+<li>
+${i.nombre} x${i.cantidad} = $${i.precio*i.cantidad}
+<button onclick="removeItem(${index})">❌</button>
+</li>`
+})
+document.getElementById("total").innerText="Total: "+total
+}
+
+function removeItem(i){
+total-=carrito[i].precio*carrito[i].cantidad
+carrito.splice(i,1)
+render()
+}
+
+function prep(){
+document.getElementById("c").value=document.getElementById("cliente").value
+document.getElementById("t").value=total
+document.getElementById("car").value=JSON.stringify(carrito)
+}
+</script>
+
+</body>
+</html>

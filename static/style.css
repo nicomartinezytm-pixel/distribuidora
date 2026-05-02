@@ -1,0 +1,86 @@
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+}
+
+/* HEADER */
+h1 {
+    text-align: center;
+    padding: 15px;
+}
+
+/* BOTONES PRINCIPALES */
+a button {
+    width: 45%;
+    margin: 5px;
+    padding: 15px;
+    font-size: 18px;
+    border-radius: 10px;
+}
+
+/* CONTENEDOR MOBILE */
+.container {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 15px;
+}
+
+/* TARJETAS */
+.card {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 15px;
+}
+
+/* INPUTS */
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin: 5px 0;
+    border-radius: 8px;
+    border: none;
+}
+
+/* BOTONES */
+button {
+    background: #22c55e;
+    border: none;
+    color: white;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 10px;
+}
+
+/* PRODUCTOS GRID */
+#productos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+#productos button {
+    padding: 20px;
+    font-size: 16px;
+}
+
+/* CARRITO */
+#carrito {
+    list-style: none;
+    padding: 0;
+}
+
+#carrito li {
+    background: #334155;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+/* TOTAL */
+#total {
+    font-size: 22px;
+    text-align: center;
+}
