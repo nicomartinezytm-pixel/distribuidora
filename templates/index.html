@@ -1,105 +1,70 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Distribuidora</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% block content %}
+    <style>
+        body {
+            font-family: Arial;
+            margin: 0;
+            background: #f4f6f8;
+        }
 
-<link rel="stylesheet" href="/static/style.css">
+        h1 {
+            text-align: center;
+            margin: 20px;
+        }
 
-<script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/service-worker.js')
-}
-</script>
+        .menu {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            padding: 15px;
+        }
 
-<h1 style="text-align:center;">📦 Distribuidora</h1>
+        .btn {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: none;
+            color: black;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
 
-<div style="text-align:center; margin-bottom:15px;">
+        .btn:hover {
+            background: #e9ecef;
+        }
 
-    <a href="/vender"><button>🧾 Ventas</button></a>
-    <a href="/dashboard"><button>📊 Dashboard</button></a>
-    <a href="/ganancias"><button>📈 Ganancias</button></a>
+        .blue { border-left: 6px solid #0d6efd; }
+        .green { border-left: 6px solid #198754; }
+        .red { border-left: 6px solid #dc3545; }
 
-</div>
+    </style>
+</head>
 
-<div class="container">
+<body>
 
-<!-- AGREGAR PRODUCTO -->
-<div class="card">
+<h1>📦 Distribuidora PRO</h1>
 
-<h2>Agregar Producto</h2>
+<div class="menu">
 
-<form method="POST" action="/agregar_producto">
+    <a class="btn green" href="/vender">
+        🛒 Ventas
+    </a>
 
-<input name="nombre" placeholder="Nombre" required>
-<input name="precio" placeholder="Precio" required>
-<input name="stock" placeholder="Stock" required>
+    <a class="btn blue" href="/dashboard">
+        📊 Dashboard
+    </a>
 
-<select name="tipo_precio" id="tipo_precio" onchange="cambiarTipo()" required>
-    <option value="unidad">Unidad</option>
-    <option value="cantidad">Cantidad</option>
-    <option value="oferta">Oferta</option>
-</select>
-
-<!-- CANTIDAD -->
-<div id="campo_cantidad" style="display:none;">
-    <input name="cantidad_extra" placeholder="Multiplicador cantidad">
-</div>
-
-<!-- OFERTA -->
-<div id="campo_oferta" style="display:none;">
-    <input name="oferta_unidades" placeholder="Unidades de oferta">
-</div>
-
-<button>Guardar</button>
-
-</form>
-
-</div>
-
-<!-- PRODUCTOS -->
-<div class="card">
-
-<h2>Productos</h2>
-
-{% for p in productos %}
-<form method="POST" action="/editar_producto/{{p[0]}}">
-
-<input name="nombre" value="{{p[1]}}">
-<input name="precio" value="{{p[2]}}">
-<input name="stock" value="{{p[3]}}">
-
-<select name="tipo_precio">
-    <option value="unidad" {% if p[4]=="unidad" %}selected{% endif %}>Unidad</option>
-    <option value="cantidad" {% if p[4]=="cantidad" %}selected{% endif %}>Cantidad</option>
-    <option value="oferta" {% if p[4]=="oferta" %}selected{% endif %}>Oferta</option>
-</select>
-
-<button>💾</button>
-<a href="/eliminar_producto/{{p[0]}}">
-<button type="button">❌</button>
-</a>
-
-</form>
-{% endfor %}
+    <a class="btn red" href="/boletas">
+        🧾 Boletas (Fiado)
+    </a>
 
 </div>
 
-</div>
-
-<script>
-function cambiarTipo() {
-    let tipo = document.getElementById("tipo_precio").value;
-
-    document.getElementById("campo_cantidad").style.display = "none";
-    document.getElementById("campo_oferta").style.display = "none";
-
-    if (tipo === "cantidad") {
-        document.getElementById("campo_cantidad").style.display = "block";
-    }
-
-    if (tipo === "oferta") {
-        document.getElementById("campo_oferta").style.display = "block";
-    }
-}
-</script>
-
-{% endblock %}
+</body>
+</html>
