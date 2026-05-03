@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Boletas</title>
+</head>
+<body>
+
+<h1>🧾 Boletas</h1>
+
+{% if alertas %}
+<div style="background:red;color:white;padding:10px;">
+⚠ Clientes con muchas deudas:
+{% for a in alertas %}
+    <p>{{ a[0] }} ({{ a[1] }} boletas)</p>
+{% endfor %}
+</div>
+{% endif %}
+
+{% for b in boletas %}
+<div style="border:1px solid #ccc;margin:10px;padding:10px;">
+    <b>{{ b['nombre'] }}</b><br>
+    Total: ${{ b['total'] }}<br>
+    Pagado: ${{ b['pagado'] }}<br>
+    Estado: {{ b['estado'] }}
+
+    <form method="POST" action="/pagar_boleta/{{b['id']}}">
+        <input name="pagado" placeholder="Monto a pagar">
+        <button>Pagar</button>
+    </form>
+</div>
+{% endfor %}
+
+<a href="/">Volver</a>
+
+</body>
+</html>
