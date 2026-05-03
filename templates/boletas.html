@@ -28,57 +28,34 @@
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1; padding: 12px; font-weight: bold;">💰 Pagar</button>
         
-        <!-- Botón que activa la función mágica -->
-        <button onclick="abrirChat('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" 
-                style="flex:1; background:#22c55e; border:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+        <!-- EL BOTÓN DEFINITIVO: Sin nada de JavaScript -->
+        <!-- Explicación: Si el número no tiene '549', se lo pega adelante automáticamente -->
+        {% set num_limpio = v.whatsapp|string|replace(' ', '')|replace('-', '') %}
+        {% if num_limpio|length == 10 %}
+            {% set num_final = "549" ~ num_limpio %}
+        {% else %}
+            {% set num_final = num_limpio %}
+        {% endif %}
+
+        <a href="https://api.whatsapp.com/send?phone={{ num_final }}&text=Hola%20{{ v.cliente|urlencode }}%21%20Ten%C3%A9s%20un%20saldo%20pendiente%20de%20%24{{ v.saldo }}" 
+           target="_blank"
+           style="flex:1; background:#22c55e; text-decoration:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; text-align:center; display:flex; align-items:center; justify-content:center;">
             📲 WhatsApp
-        </button>
+        </a>
     </div>
 </div>
 
-<!-- Modal para registrar pago (Sin cambios) -->
+<!-- Modal para registrar pago (Sigue igual porque funciona bien) -->
 <div id="m-{{v.id}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
     <div class="card" style="margin:20% auto; width: 85%; background:#1e293b; padding: 25px;">
         <h3>Registrar entrega</h3>
         <form action="/registrar_pago" method="POST">
             <input type="hidden" name="id" value="{{ v.id }}">
-            <input type="number" step="0.01" name="monto" placeholder="Monto" required style="width:100%; padding: 10px; margin-bottom:10px; background:#0f172a; color:white; border:1px solid #334155;">
-            <button type="submit" style="width:100%; background:#3b82f6; padding: 10px; border:none; color:white; border-radius:5px;">Confirmar</button>
-            <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" style="width:100%; background:transparent; border:none; color:white; margin-top:10px;">Cerrar</button>
+            <input type="number" step="0.01" name="monto" placeholder="¿Cuánto entregó?" required style="width:100%; padding: 12px; margin-bottom:15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white;">
+            <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar</button>
+            <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar</button>
         </form>
     </div>
 </div>
 {% endfor %}
-
-<script>
-function abrirChat(numero, nombre, saldo) {
-    // 1. Limpiamos el número de cualquier cosa que no sea dígito
-    let n = numero.replace(/\D/g, '');
-    
-    // 2. Si el número tiene 10 dígitos (ej: 3541228986)
-    // Le pegamos el 549 adelante automáticamente
-    if (n.length === 10) {
-        n = "549" + n;
-    } 
-    // Si el usuario puso el 15 (ej: 3541 15 228986), se lo volamos
-    else if (n.length === 12 && n.substring(4, 6) === "15") {
-        n = n.substring(0, 4) + n.substring(6);
-        if (!n.startsWith("54")) n = "549" + n;
-    }
-    // Si no tiene el 54 al principio, se lo ponemos
-    else if (n.length > 0 && !n.startsWith("54")) {
-        n = "549" + n;
-    }
-
-    let mensaje = encodeURIComponent(`Hola ${nombre}! Tenés un saldo pendiente de $${saldo}. ¿Cómo andás?`);
-    
-    // 3. LA CLAVE: Usamos api.whatsapp.com que es lo más compatible
-    let url = "https://api.whatsapp.com/send?phone=" + n + "&text=" + mensaje;
-    
-    // Intentamos abrirlo. Si falla el pop-up, redirigimos la pestaña
-    if (!window.open(url, '_blank')) {
-        window.location.href = url;
-    }
-}
-</script>
 {% endblock %}
