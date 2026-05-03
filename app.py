@@ -14,41 +14,26 @@ def get_db():
 
 def init_db():
     db = get_db()
-    # Tabla de productos: Incluye unidad y ofertas
+    # PRODUCTOS: Inventario central
     db.execute("""
         CREATE TABLE IF NOT EXISTS productos (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            nombre TEXT, 
-            precio REAL, 
-            stock INTEGER, 
-            unidad TEXT, 
-            oferta TEXT
+            nombre TEXT, precio REAL, stock INTEGER, unidad TEXT, oferta TEXT
         )""")
-    
-    # Tabla de compras: Registro de entrada de mercadería
+    # COMPRAS: Lo que nosotros compramos a mayoristas (Abastecimiento)
     db.execute("""
         CREATE TABLE IF NOT EXISTS compras (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            lugar TEXT, 
-            producto TEXT, 
-            cantidad INTEGER, 
-            total REAL, 
-            fecha TEXT DEFAULT (DATETIME('now','localtime'))
+            lugar TEXT, direccion TEXT, producto TEXT, 
+            cantidad INTEGER, total REAL, fecha TEXT DEFAULT (DATETIME('now','localtime'))
         )""")
-    
-    # Tabla de ventas: Incluye teléfono para el link de WhatsApp
+    # VENTAS: Lo que vendemos a nuestros clientes
     db.execute("""
         CREATE TABLE IF NOT EXISTS ventas (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            cliente TEXT, 
-            direccion TEXT, 
-            telefono TEXT, 
-            detalle TEXT, 
-            total REAL, 
-            pagado REAL DEFAULT 0, 
-            saldo REAL DEFAULT 0, 
-            estado TEXT DEFAULT 'fiado', 
-            fecha TEXT DEFAULT (DATETIME('now','localtime'))
+            cliente TEXT, direccion TEXT, telefono TEXT, detalle TEXT, 
+            total REAL, pagado REAL DEFAULT 0, saldo REAL DEFAULT 0, 
+            estado TEXT DEFAULT 'fiado', fecha TEXT DEFAULT (DATETIME('now','localtime'))
         )""")
     db.commit()
     db.close()
@@ -69,62 +54,43 @@ def productos_json():
     db.close()
     return jsonify([dict(p) for p in productos])
 
-@app.route("/agregar_producto", methods=["POST"])
-def agregar_producto():
+# --- PANEL DE CONTROL: COMPRAS (ABASTECIMIENTO) ---
+@app.route("/compras")
+def compras():
     db = get_db()
-    db.execute("""
-        INSERT INTO productos (nombre, precio, stock, unidad, oferta) 
-        VALUES (?, ?, ?, ?, ?)
-    """, (
-        request.form["nombre"], 
-        float(request.form["precio"]), 
-        int(request.form["stock"]),
-        request.form.get("unidad", "Unidad"),
-        request.form.get("oferta", "")
-    ))
-    db.commit()
+    historial = db.execute("SELECT * FROM compras ORDER BY id DESC").fetchall()
+    productos = db.execute("SELECT nombre, stock FROM productos ORDER BY nombre ASC").fetchall()
     db.close()
-    return redirect("/")
-
-@app.route("/editar_producto", methods=["POST"])
-def editar_producto():
-    db = get_db()
-    db.execute("""
-        UPDATE productos 
-        SET nombre=?, precio=?, stock=?, unidad=?, oferta=? 
-        WHERE id=?
-    """, (
-        request.form["nombre"], 
-        float(request.form["precio"]), 
-        int(request.form["stock"]),
-        request.form["unidad"],
-        request.form["oferta"],
-        int(request.form["id"])
-    ))
-    db.commit()
-    db.close()
-    return redirect("/")
-
-@app.route("/eliminar_producto/<int:id>")
-def eliminar_producto(id):
-    db = get_db()
-    db.execute("DELETE FROM productos WHERE id=?", (id,))
-    db.commit()
-    db.close()
-    return redirect("/")
+    return render_template("compras.html", historial=historial, productos=productos)
 
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
-    prod_nom = request.form["producto"]
-    cant = int(request.form["cantidad"])
-    db.execute("INSERT INTO compras (lugar, producto, cantidad, total) VALUES (?, ?, ?, ?)", 
-               (request.form["lugar"], prod_nom, cant, float(request.form["total"])))
-    db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cant, prod_nom))
+    lugar = request.form["lugar"]
+    direccion = request.form["direccion"]
+    producto = request.form["producto"]
+    cantidad = int(request.form["cantidad"])
+    total = float(request.form["total"])
+    db.execute("INSERT INTO compras (lugar, direccion, producto, cantidad, total) VALUES (?, ?, ?, ?, ?)",
+               (lugar, direccion, producto, cantidad, total))
+    # SUMAR AL STOCK
+    db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cantidad, producto))
     db.commit()
     db.close()
-    return redirect("/")
+    return redirect("/compras")
 
+@app.route("/eliminar_compra/<int:id>")
+def eliminar_compra(id):
+    db = get_db()
+    compra = db.execute("SELECT producto, cantidad FROM compras WHERE id=?", (id,)).fetchone()
+    if compra:
+        db.execute("UPDATE productos SET stock = stock - ? WHERE nombre = ?", (compra["cantidad"], compra["producto"]))
+    db.execute("DELETE FROM compras WHERE id=?", (id,))
+    db.commit()
+    db.close()
+    return redirect("/compras")
+
+# --- SISTEMA DE VENTAS ---
 @app.route("/vender")
 def vender():
     return render_template("ventas.html")
@@ -135,35 +101,22 @@ def finalizar_venta():
     data = json.loads(request.form["data"])
     total_venta = 0
     detalle_lista = []
-    
     for item in data["carrito"]:
         p = db.execute("SELECT * FROM productos WHERE id=?", (item["id"],)).fetchone()
         if p:
             sub = p["precio"] * item["cantidad"]
             total_venta += sub
-            detalle_lista.append({
-                "nombre": p["nombre"], 
-                "cantidad": item["cantidad"], 
-                "precio": p["precio"], 
-                "subtotal": sub
-            })
+            detalle_lista.append({"nombre": p["nombre"], "cantidad": item["cantidad"], "precio": p["precio"], "subtotal": sub})
+            # RESTAR DEL STOCK
             db.execute("UPDATE productos SET stock = stock - ? WHERE id=?", (item["cantidad"], item["id"]))
     
-    # La venta siempre inicia como 'fiado' con saldo total
-    db.execute("""
-        INSERT INTO ventas (cliente, direccion, telefono, detalle, total, pagado, saldo, estado) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        data["cliente"]["nombre"], 
-        data["cliente"]["direccion"], 
-        data["cliente"]["telefono"],
-        json.dumps(detalle_lista), 
-        total_venta, 0, total_venta, "fiado"
-    ))
+    db.execute("INSERT INTO ventas (cliente, direccion, telefono, detalle, total, pagado, saldo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+               (data["cliente"]["nombre"], data["cliente"]["direccion"], data["cliente"]["telefono"], json.dumps(detalle_lista), total_venta, 0, total_venta, "fiado"))
     db.commit()
     db.close()
     return jsonify({"ok": True})
 
+# --- GESTION DE CLIENTES Y BOLETAS ---
 @app.route("/boletas")
 def boletas():
     db = get_db()
@@ -171,53 +124,12 @@ def boletas():
     db.close()
     return render_template("boletas.html", boletas=res)
 
-@app.route("/pagar_boleta", methods=["POST"])
-def pagar_boleta():
-    db = get_db()
-    id_venta = int(request.form["id"])
-    monto_nuevo = float(request.form.get("monto", 0))
-    
-    venta = db.execute("SELECT total, pagado FROM ventas WHERE id=?", (id_venta,)).fetchone()
-    if venta:
-        n_pagado = venta["pagado"] + monto_nuevo
-        n_saldo = max(0, venta["total"] - n_pagado)
-        
-        if n_saldo <= 0:
-            estado = "pagado"
-        elif n_pagado > 0:
-            estado = "parcial"
-        else:
-            estado = "fiado"
-            
-        db.execute("UPDATE ventas SET pagado=?, saldo=?, estado=? WHERE id=?", 
-                   (n_pagado, n_saldo, estado, id_venta))
-        db.commit()
-    db.close()
-    return redirect("/boletas")
-
-@app.route("/eliminar_venta/<int:id>")
-def eliminar_venta(id):
-    db = get_db()
-    venta = db.execute("SELECT detalle FROM ventas WHERE id=?", (id,)).fetchone()
-    if venta:
-        for item in json.loads(venta["detalle"]):
-            db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", 
-                       (item["cantidad"], item["nombre"]))
-    db.execute("DELETE FROM ventas WHERE id=?", (id,))
-    db.commit()
-    db.close()
-    return redirect("/boletas")
-
 @app.route("/clientes")
 def clientes():
     db = get_db()
-    query = """
-        SELECT cliente, direccion, telefono, 
-        SUM(total) as total_gastado, 
-        SUM(saldo) as deuda_total,
-        COUNT(id) as total_compras
-        FROM ventas GROUP BY cliente ORDER BY deuda_total DESC
-    """
+    query = """SELECT cliente, direccion, telefono, SUM(total) as total_gastado, 
+               SUM(saldo) as deuda_total, COUNT(id) as total_compras 
+               FROM ventas GROUP BY cliente ORDER BY deuda_total DESC"""
     res = db.execute(query).fetchall()
     db.close()
     return render_template("clientes.html", clientes=res)
@@ -230,6 +142,15 @@ def dashboard():
     db.close()
     return render_template("dashboard.html", total_ventas=v, total_compras=c, ganancia=v-c)
 
+# --- RUTAS DE CONFIGURACIÓN ---
+@app.route("/agregar_producto", methods=["POST"])
+def agregar_producto():
+    db = get_db()
+    db.execute("INSERT INTO productos (nombre, precio, stock, unidad, oferta) VALUES (?, ?, ?, ?, ?)", 
+               (request.form["nombre"], float(request.form["precio"]), int(request.form["stock"]), request.form.get("unidad", "Unidad"), request.form.get("oferta", "")))
+    db.commit()
+    db.close()
+    return redirect("/")
+
 if __name__ == "__main__":
-    # Render usa el puerto 10000 por defecto
     app.run(host="0.0.0.0", port=10000)
