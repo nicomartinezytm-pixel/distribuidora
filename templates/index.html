@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Distribuidora</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="manifest" href="/static/manifest.json">
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/static/style.css">
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -13,10 +10,12 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<h1>📦 Distribuidora</h1>
+<h1 style="text-align:center;">📦 Distribuidora</h1>
 
-<a href="/vender"><button>🧾 Ventas</button></a>
-<a href="/dashboard"><button>📊 Dashboard</button></a>
+<div style="text-align:center; margin-bottom:15px;">
+    <a href="/vender"><button>🧾 Ventas</button></a>
+    <a href="/dashboard"><button>📊 Dashboard</button></a>
+</div>
 
 <div class="container">
 
@@ -26,33 +25,42 @@ if ('serviceWorker' in navigator) {
 <input name="nombre" placeholder="Nombre">
 <input name="precio" placeholder="Precio">
 <input name="stock" placeholder="Stock">
+
 <select name="tipo_precio">
 <option value="unidad">Unidad</option>
 <option value="cantidad">Cantidad</option>
 <option value="oferta">Oferta</option>
 </select>
+
 <button>Guardar</button>
 </form>
 </div>
 
 <div class="card">
 <h2>Productos</h2>
+
 {% for p in productos %}
 <form method="POST" action="/editar_producto/{{p[0]}}">
 <input name="nombre" value="{{p[1]}}">
 <input name="precio" value="{{p[2]}}">
 <input name="stock" value="{{p[3]}}">
+
 <select name="tipo_precio">
 <option value="unidad" {% if p[4]=="unidad" %}selected{% endif %}>Unidad</option>
 <option value="cantidad" {% if p[4]=="cantidad" %}selected{% endif %}>Cantidad</option>
 <option value="oferta" {% if p[4]=="oferta" %}selected{% endif %}>Oferta</option>
 </select>
+
 <button>💾</button>
-<a href="/eliminar_producto/{{p[0]}}"><button type="button">❌</button></a>
+<a href="/eliminar_producto/{{p[0]}}">
+<button type="button">❌</button>
+</a>
+
 </form>
 {% endfor %}
+
 </div>
 
 </div>
-</body>
-</html>
+
+{% endblock %}
