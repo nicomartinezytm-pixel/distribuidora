@@ -1,18 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 style="font-size: 20px;">Resumen de Negocio</h1>
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-    <div class="card" style="text-align:center;">
-        <small style="color:#94a3b8">Ventas</small>
-        <div style="font-size: 20px; font-weight: bold; color: #22c55e;">${{ total_ventas }}</div>
+<style>
+    .dash-container { display: flex; flex-direction: column; gap: 20px; }
+    .dash-section { padding: 20px; border-radius: 12px; color: white; }
+    .bg-ventas { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .bg-compras { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .bg-balance { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .big-num { font-size: 32px; font-weight: bold; display: block; }
+</style>
+
+<h2>Resumen de Negocio</h2>
+
+<div class="dash-container">
+    <!-- PARTE 1: GANANCIAS (VENTAS) -->
+    <div class="dash-section bg-ventas">
+        <h3>💰 Ventas y Cobros</h3>
+        <span>Total Vendido:</span>
+        <span class="big-num">${{ total_v }}</span>
+        <hr style="opacity:0.3">
+        <span>Ya Cobrado (Efectivo real):</span>
+        <span style="font-size: 20px; font-weight: bold;">${{ total_cobrado }}</span>
     </div>
-    <div class="card" style="text-align:center;">
-        <small style="color:#94a3b8">Stock Bajo</small>
-        <div style="font-size: 20px; font-weight: bold; color: #f59e0b;">{{ alertas_stock }}</div>
+
+    <!-- PARTE 2: GASTADO (COMPRAS) -->
+    <div class="dash-section bg-compras">
+        <h3>🛒 Compras (Gastos)</h3>
+        <span>Inversión en Mercadería:</span>
+        <span class="big-num">${{ total_c }}</span>
     </div>
-</div>
-<div class="card" style="text-align:center; border-left: 5px solid #3b82f6;">
-    <small style="color:#94a3b8">Ganancia Estimada</small>
-    <div style="font-size: 28px; font-weight: bold;">${{ ganancia }}</div>
+
+    <!-- PARTE 3: COMPARACIÓN Y TOTAL -->
+    <div class="dash-section bg-balance">
+        <h3>📊 Balance General</h3>
+        <span>Diferencia (Ventas vs Compras):</span>
+        <span class="big-num">${{ balance }}</span>
+        <p style="margin-top: 10px; font-size: 14px;">
+            {% if balance > 0 %}
+                Tu negocio está dando una ganancia proyectada de ${{ balance }}.
+            {% else %}
+                Estás en pérdida por ${{ balance }}. ¡A vender más!
+            {% endif %}
+        </p>
+    </div>
 </div>
 {% endblock %}
