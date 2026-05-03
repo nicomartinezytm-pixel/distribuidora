@@ -112,7 +112,7 @@ def agregar_compra():
 
     precio_unitario = total / cantidad if cantidad > 0 else 0
 
-    # sumar stock automático
+    # sumar stock si existe producto
     prod = db.execute("SELECT * FROM productos WHERE nombre=?", (producto,)).fetchone()
 
     if prod:
@@ -129,6 +129,7 @@ def agregar_compra():
 
     db.commit()
     db.close()
+
     return redirect("/")
 
 
@@ -155,14 +156,15 @@ def finalizar_venta():
     for item in carrito:
         prod = db.execute("SELECT * FROM productos WHERE id=?", (item["id"],)).fetchone()
 
-        subtotal = prod["precio"] * item["cantidad"]
-        total += subtotal
+        if prod:
+            subtotal = prod["precio"] * item["cantidad"]
+            total += subtotal
 
-        db.execute("""
-            UPDATE productos
-            SET stock = stock - ?
-            WHERE id=?
-        """, (item["cantidad"], item["id"]))
+            db.execute("""
+                UPDATE productos
+                SET stock = stock - ?
+                WHERE id=?
+            """, (item["cantidad"], item["id"]))
 
     db.execute("""
         INSERT INTO ventas (cliente_id, total)
