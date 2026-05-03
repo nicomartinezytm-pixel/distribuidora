@@ -1,96 +1,126 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>🧾 Nueva Venta</h1>
+
+<style>
+    .search-box { position: relative; margin-bottom: 20px; }
+    .results { position: absolute; background: #1e293b; width: 100%; border-radius: 8px; z-index: 10; border: 1px solid #334155; max-height: 200px; overflow-y: auto; }
+    .item-res { padding: 10px; cursor: pointer; border-bottom: 1px solid #334155; }
+    .item-res:hover { background: #334155; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+    .tag-oferta-mini { font-size: 10px; background: #f59e0b; color: black; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
+</style>
+
+<h1>🛒 Nueva Venta</h1>
 
 <div class="card">
-    <h3>👤 Cliente</h3>
-    <input id="nombre" placeholder="Nombre del cliente">
-    <input id="direccion" placeholder="Dirección">
-    <input id="pagado" type="number" placeholder="¿Cuánto paga ahora?">
+    <input type="text" id="clienteNom" placeholder="Nombre del Cliente" required>
+    <input type="text" id="clienteDir" placeholder="Dirección">
 </div>
 
-<div class="card">
-    <h3>📦 Stock disponible</h3>
-    <div id="productos_lista" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+<div class="search-box">
+    <input type="text" id="buscador" placeholder="🔍 Buscar producto por nombre..." onkeyup="buscar()">
+    <div id="listaResultados" class="results"></div>
 </div>
 
-<div class="card">
-    <h3>🛒 Carrito</h3>
-    <div id="carrito_lista"></div>
-    <h2 style="text-align: right;">Total: $<span id="total_pago">0</span></h2>
-    <button onclick="finalizar()" style="background: #22c55e;">COMPLETAR VENTA</button>
+<div id="carrito" style="margin-top: 20px;">
+    <h3>Detalle del Pedido</h3>
+    <div id="itemsCarrito"></div>
+    <hr style="opacity: 0.1;">
+    <h2 style="text-align: right;">Total: $<span id="totalVenta">0</span></h2>
+    
+    <button onclick="finalizarVenta()" style="background: #22c55e; width: 100%; font-size: 18px; margin-top: 10px;">
+        🚀 Confirmar Pedido (Fiado)
+    </button>
 </div>
 
 <script>
+let productos = [];
 let carrito = [];
 
-function cargarProductos() {
-    fetch("/productos_json")
-    .then(r => r.json())
-    .then(data => {
-        const div = document.getElementById("productos_lista");
-        div.innerHTML = ""; 
-        data.forEach(p => {
-            div.innerHTML += `
-            <div class="card" style="margin:0; padding:10px; font-size:13px;">
-                <b>${p.nombre}</b><br>
-                $${p.precio} | Stock: ${p.stock}<br>
-                <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio}, ${p.stock})" 
-                        style="padding:5px; margin-top:5px; font-size:11px;" 
-                        ${p.stock <= 0 ? 'disabled style="background:gray"' : ''}>
-                    ${p.stock <= 0 ? 'Agotado' : 'Añadir'}
-                </button>
-            </div>`;
-        });
+async function cargarProds() {
+    const res = await fetch('/productos_json');
+    productos = await res.json();
+}
+
+function buscar() {
+    const term = document.getElementById('buscador').value.toLowerCase();
+    const resDiv = document.getElementById('listaResultados');
+    resDiv.innerHTML = '';
+    if(!term) return;
+
+    const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(term));
+    filtrados.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'item-res';
+        div.innerHTML = `<b>${p.nombre}</b> - $${p.precio} <small>(${p.unidad})</small>`;
+        div.onclick = () => agregarAlCarrito(p);
+        resDiv.appendChild(div);
     });
 }
 
-function agregar(id, nombre, precio, stockMax) {
-    let item = carrito.find(p => p.id === id);
-    if(item) {
-        if(item.cantidad < stockMax) item.cantidad++;
-        else alert("Sin stock");
+function agregarAlCarrito(p) {
+    const existe = carrito.find(item => item.id === p.id);
+    if(existe) {
+        existe.cantidad++;
     } else {
-        carrito.push({id, nombre, precio, cantidad: 1});
+        carrito.push({...p, cantidad: 1});
+    }
+    document.getElementById('buscador').value = '';
+    document.getElementById('listaResultados').innerHTML = '';
+    renderCarrito();
+}
+
+function cambiarCant(id, delta) {
+    const item = carrito.find(i => i.id === id);
+    if(item) {
+        item.cantidad += delta;
+        if(item.cantidad <= 0) carrito = carrito.filter(i => i.id !== id);
     }
     renderCarrito();
 }
 
 function renderCarrito() {
-    const div = document.getElementById("carrito_lista");
-    div.innerHTML = "";
+    const div = document.getElementById('itemsCarrito');
+    div.innerHTML = '';
     let total = 0;
-    carrito.forEach((p, i) => {
-        let sub = p.precio * p.cantidad;
+    carrito.forEach(item => {
+        const sub = item.precio * item.cantidad;
         total += sub;
-        div.innerHTML += `<div style="display:flex; justify-content:space-between; margin:5px 0;">
-            <span>${p.nombre} x${p.cantidad}</span>
-            <span>$${sub} <button class="red" onclick="quitar(${i})" style="width:30px; display:inline; padding:2px;">X</button></span>
-        </div>`;
+        div.innerHTML += `
+            <div class="cart-item">
+                <div>
+                    <b>${item.nombre}</b> <br>
+                    <small>$${item.precio} x ${item.cantidad}</small>
+                    ${item.oferta ? `<span class="tag-oferta-mini">${item.oferta}</span>` : ''}
+                </div>
+                <div>
+                    <button onclick="cambiarCant(${item.id}, -1)">-</button>
+                    <span style="margin: 0 10px;">${item.cantidad}</span>
+                    <button onclick="cambiarCant(${item.id}, 1)">+</button>
+                    <b style="margin-left:15px;">$${sub}</b>
+                </div>
+            </div>`;
     });
-    document.getElementById("total_pago").innerText = total.toFixed(2);
+    document.getElementById('totalVenta').innerText = total;
 }
 
-function quitar(i) { carrito.splice(i, 1); renderCarrito(); }
-
-function finalizar() {
-    if(carrito.length === 0) return alert("Carrito vacío");
-    let data = {
-        cliente: { nombre: document.getElementById("nombre").value || "Consumidor Final", direccion: document.getElementById("direccion").value || "N/C" },
-        carrito: carrito,
-        pagado: document.getElementById("pagado").value || 0
+async function finalizarVenta() {
+    const cliente = {
+        nombre: document.getElementById('clienteNom').value,
+        direccion: document.getElementById('clienteDir').value
     };
-    fetch("/finalizar_venta", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "data=" + encodeURIComponent(JSON.stringify(data))
-    }).then(() => {
-        alert("Venta exitosa");
-        carrito = [];
-        renderCarrito();
-        cargarProductos(); // Actualiza stock visual
-    });
+    if(!cliente.nombre || carrito.length === 0) return alert("Faltan datos");
+
+    const formData = new FormData();
+    formData.append('data', JSON.stringify({cliente, carrito}));
+
+    const res = await fetch('/finalizar_venta', { method: 'POST', body: formData });
+    if(res.ok) {
+        alert("Pedido cargado con éxito");
+        window.location.href = "/boletas";
+    }
 }
-cargarProductos();
+cargarProds();
 </script>
+
 {% endblock %}
