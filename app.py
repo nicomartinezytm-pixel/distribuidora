@@ -14,7 +14,6 @@ def get_db():
 
 def init_db():
     db = get_db()
-    # Tablas con persistencia
     db.execute("""CREATE TABLE IF NOT EXISTS productos (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
         nombre TEXT NOT NULL, precio REAL NOT NULL, stock INTEGER NOT NULL,
@@ -34,6 +33,13 @@ def init_db():
 
 init_db()
 
+@app.route("/")
+def index():
+    db = get_db()
+    rows = db.execute("SELECT * FROM productos ORDER BY nombre ASC").fetchall()
+    db.close()
+    return render_template("index.html", productos=rows)
+
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
@@ -43,47 +49,62 @@ def dashboard():
     db.close()
     return render_template("dashboard.html", total_ventas=v, total_compras=c, ganancia=v-c, alertas_stock=alerta)
 
-@app.route("/")
-def index():
+@app.route("/compras")
+def compras():
     db = get_db()
-    rows = db.execute("SELECT * FROM productos ORDER BY nombre ASC").fetchall()
+    historial = db.execute("SELECT * FROM compras ORDER BY id DESC").fetchall()
+    prods = db.execute("SELECT nombre FROM productos").fetchall()
     db.close()
-    return render_template("index.html", productos=rows)
+    return render_template("compras.html", historial=historial, productos=prods)
+
+@app.route("/agregar_compra", methods=["POST"])
+def agregar_compra():
+    db = get_db()
+    lugar = request.form['lugar']
+    prod = request.form['producto']
+    cant = int(request.form['cantidad'])
+    total = float(request.form['total'])
+    db.execute("INSERT INTO compras (lugar, producto, cantidad, total) VALUES (?,?,?,?)", (lugar, prod, cant, total))
+    # Actualizar stock
+    db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cant, prod))
+    db.commit()
+    db.close()
+    return redirect("/compras")
+
+@app.route("/vender")
+def vender():
+    return render_template("ventas.html")
 
 @app.route("/productos_json")
 def productos_json():
     db = get_db()
-    res = db.execute("SELECT * FROM productos").fetchall()
+    res = db.execute("SELECT * FROM productos WHERE stock > 0").fetchall()
     db.close()
     return jsonify([dict(r) for r in res])
-
-@app.route("/agregar_producto", methods=["POST"])
-def agregar():
-    db = get_db()
-    db.execute("INSERT INTO productos (nombre, precio, stock, unidad, oferta) VALUES (?,?,?,?,?)",
-               (request.form['nombre'], request.form['precio'], request.form['stock'], request.form['unidad'], request.form['oferta']))
-    db.commit()
-    return redirect("/")
 
 @app.route("/finalizar_venta", methods=["POST"])
 def finalizar_venta():
     db = get_db()
-    data = json.loads(request.form["data"])
+    data = request.json
+    cliente = data["cliente"]
+    carrito = data["carrito"]
     total = 0
-    for item in data["carrito"]:
-        sub = float(item["precio"]) * int(item["cantidad"])
-        total += sub
-        db.execute("UPDATE productos SET stock = stock - ? WHERE id = ?", (item["cantidad"], item["id"]))
+    for item in carrito:
+        total += float(item['precio']) * int(item['cantidad'])
+        db.execute("UPDATE productos SET stock = stock - ? WHERE id = ?", (item['cantidad'], item['id']))
+    
     db.execute("INSERT INTO ventas (cliente, detalle, total, saldo) VALUES (?,?,?,?)",
-               (data["cliente"]["nombre"], json.dumps(data["carrito"]), total, total))
+               (cliente['nombre'], json.dumps(carrito), total, total))
     db.commit()
+    db.close()
     return jsonify({"ok": True})
 
 @app.route("/boletas")
 def boletas():
     db = get_db()
     res = db.execute("SELECT * FROM ventas ORDER BY id DESC").fetchall()
+    db.close()
     return render_template("boletas.html", boletas=res)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000, debug=True)
+    app.run(host="0.0.0.0", port=10000)
