@@ -52,18 +52,8 @@ def agregar_producto():
 @app.route("/editar_producto", methods=["POST"])
 def editar_producto():
     db = get_db()
-    db.execute("""
-        UPDATE productos 
-        SET nombre=?, precio=?, stock=?, unidad=?, oferta=? 
-        WHERE id=?
-    """, (
-        request.form["nombre"], 
-        float(request.form["precio"]), 
-        int(request.form["stock"]),
-        request.form["unidad"],
-        request.form["oferta"],
-        int(request.form["id"])
-    ))
+    db.execute("UPDATE productos SET nombre=?, precio=?, stock=?, unidad=?, oferta=? WHERE id=?", 
+               (request.form["nombre"], float(request.form["precio"]), int(request.form["stock"]), request.form["unidad"], request.form["oferta"], int(request.form["id"])))
     db.commit()
     db.close()
     return redirect("/")
@@ -72,18 +62,6 @@ def editar_producto():
 def eliminar_producto(id):
     db = get_db()
     db.execute("DELETE FROM productos WHERE id=?", (id,))
-    db.commit()
-    db.close()
-    return redirect("/")
-
-@app.route("/agregar_compra", methods=["POST"])
-def agregar_compra():
-    db = get_db()
-    prod_nom = request.form["producto"]
-    cant = int(request.form["cantidad"])
-    db.execute("INSERT INTO compras (lugar, producto, cantidad, total) VALUES (?, ?, ?, ?)", 
-               (request.form["lugar"], prod_nom, cant, float(request.form["total"])))
-    db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cant, prod_nom))
     db.commit()
     db.close()
     return redirect("/")
@@ -98,6 +76,7 @@ def finalizar_venta():
     data = json.loads(request.form["data"])
     total_venta = 0
     detalle_lista = []
+    
     for item in data["carrito"]:
         p = db.execute("SELECT * FROM productos WHERE id=?", (item["id"],)).fetchone()
         if p:
@@ -106,12 +85,9 @@ def finalizar_venta():
             detalle_lista.append({"nombre": p["nombre"], "cantidad": item["cantidad"], "precio": p["precio"], "subtotal": sub})
             db.execute("UPDATE productos SET stock = stock - ? WHERE id=?", (item["cantidad"], item["id"]))
     
-    pagado = float(data.get("pagado") or 0)
-    saldo = max(0, total_venta - pagado)
-    estado = "pagado" if saldo <= 0 else ("parcial" if pagado > 0 else "fiado")
-    
+    # Al vender, siempre entra como Fiado con 0 pagado
     db.execute("INSERT INTO ventas (cliente, direccion, detalle, total, pagado, saldo, estado) VALUES (?, ?, ?, ?, ?, ?, ?)",
-               (data["cliente"]["nombre"], data["cliente"]["direccion"], json.dumps(detalle_lista), total_venta, pagado, saldo, estado))
+               (data["cliente"]["nombre"], data["cliente"]["direccion"], json.dumps(detalle_lista), total_venta, 0, total_venta, "fiado"))
     db.commit()
     db.close()
     return jsonify({"ok": True})
@@ -123,16 +99,25 @@ def boletas():
     db.close()
     return render_template("boletas.html", boletas=res)
 
-@app.route("/pagar_boleta/<int:id>", methods=["POST"])
-def pagar_boleta(id):
+@app.route("/pagar_boleta", methods=["POST"])
+def pagar_boleta():
     db = get_db()
-    monto = float(request.form.get("monto", 0))
-    venta = db.execute("SELECT total, pagado FROM ventas WHERE id=?", (id,)).fetchone()
+    id_venta = int(request.form["id"])
+    monto_nuevo = float(request.form.get("monto", 0))
+    
+    venta = db.execute("SELECT total, pagado FROM ventas WHERE id=?", (id_venta,)).fetchone()
     if venta:
-        n_pagado = venta["pagado"] + monto
+        n_pagado = venta["pagado"] + monto_nuevo
         n_saldo = max(0, venta["total"] - n_pagado)
-        estado = "pagado" if n_saldo <= 0 else "parcial"
-        db.execute("UPDATE ventas SET pagado=?, saldo=?, estado=? WHERE id=?", (n_pagado, n_saldo, estado, id))
+        
+        if n_saldo <= 0:
+            estado = "pagado"
+        elif n_pagado > 0:
+            estado = "parcial"
+        else:
+            estado = "fiado"
+            
+        db.execute("UPDATE ventas SET pagado=?, saldo=?, estado=? WHERE id=?", (n_pagado, n_saldo, estado, id_venta))
         db.commit()
     db.close()
     return redirect("/boletas")
