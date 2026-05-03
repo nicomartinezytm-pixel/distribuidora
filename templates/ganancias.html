@@ -1,62 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ganancias</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <style>
-        body {
-            font-family: Arial;
-            margin: 0;
-            background: #f2f2f2;
-        }
-
-        h1 {
-            text-align: center;
-        }
-
-        .card {
-            background: white;
-            margin: 10px;
-            padding: 15px;
-            border-radius: 10px;
-        }
-
-        .back {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            background: black;
-            color: white;
-            padding: 10px;
-            border-radius: 50%;
-            text-decoration: none;
-        }
-    </style>
+    <title>Ganancias - Distribuidora Pro</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<a href="/" class="back">←</a>
+<h1>💰 Ganancias</h1>
 
-<h1>📊 Ganancias del Día</h1>
-
-<div class="card">
-    <h2>Total ganado hoy</h2>
-    <h1>$ {{ total_dia }}</h1>
+<div class="nav">
+    <a href="/"><button>🏠 Inicio</button></a>
+    <a href="/dashboard"><button>📊 Dashboard</button></a>
+    <a href="/vender"><button>🧾 Ventas</button></a>
+    <a href="/clientes"><button>👥 Clientes</button></a>
 </div>
 
-<div class="card">
-    <h2>Ventas del día</h2>
-    <h1>{{ ventas_dia }}</h1>
-</div>
+<div class="container">
 
-<div class="card">
-    <h2>Clientes</h2>
+    <!-- ========================= -->
+    <!-- 📅 RESUMEN MENSUAL -->
+    <!-- ========================= -->
 
-    {% for c in clientes %}
-        <p>👤 {{ c[0] }} - ${{ c[1] }}</p>
-    {% endfor %}
+    <div class="card">
+        <h2>📅 Resumen Mensual</h2>
+
+        <p>💰 Total ventas del mes: ${{ ventas_mes }}</p>
+        <p>🛒 Total compras del mes: ${{ compras_mes }}</p>
+
+        <hr>
+
+        <h2>
+            🔥 Ganancia neta del mes: ${{ ganancia_mes }}
+        </h2>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 📊 EXPLICACIÓN -->
+    <!-- ========================= -->
+
+    <div class="card">
+        <h2>📊 Análisis</h2>
+
+        <p>
+            📦 Las ventas representan el dinero que ingresa al negocio.<br>
+            🛒 Las compras representan el dinero invertido en mercadería.<br><br>
+
+            🔥 La ganancia es la diferencia real entre ambos valores.
+        </p>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 💡 FUTURO (VISUAL) -->
+    <!-- ========================= -->
+
+    <div class="card">
+        <h2>🚀 Próximas mejoras</h2>
+
+        <ul>
+            <li>📈 Gráficos de ganancias mensuales</li>
+            <li>📊 Comparación mes a mes</li>
+            <li>📦 Ganancia por producto</li>
+            <li>🏪 Ganancia por proveedor (Carrefour, etc.)</li>
+        </ul>
+    </div>
+
 </div>
 
 </body>
