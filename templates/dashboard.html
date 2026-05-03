@@ -6,6 +6,9 @@
 
     <link rel="stylesheet" href="/static/style.css">
 
+    <!-- CHART.JS (GRÁFICO) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -19,7 +22,19 @@
             margin-top: 20px;
         }
 
-        /* BOTÓN VOLVER FLOTANTE */
+        .container {
+            padding: 15px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        /* BOTÓN VOLVER */
         .back-btn {
             position: fixed;
             top: 15px;
@@ -30,7 +45,6 @@
             border-radius: 50%;
             text-decoration: none;
             z-index: 9999;
-            font-size: 18px;
         }
 
         /* BARRA INFERIOR */
@@ -44,8 +58,6 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            border-top: 1px solid #333;
-            z-index: 9999;
         }
 
         .nav-item {
@@ -60,30 +72,12 @@
             display: block;
             font-size: 11px;
         }
-
-        .nav-item:active {
-            background: #222;
-            border-radius: 10px;
-        }
-
-        /* CONTENIDO */
-        .container {
-            padding: 15px;
-        }
-
-        .card {
-            background: white;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
     </style>
 </head>
 
 <body>
 
-<!-- BOTÓN VOLVER -->
+<!-- VOLVER -->
 <a href="/" class="back-btn">←</a>
 
 <h1>📊 Dashboard</h1>
@@ -108,7 +102,29 @@
         {% endfor %}
     </div>
 
+    <div class="card">
+        <h2>Gráfico de ventas</h2>
+        <canvas id="grafico"></canvas>
+    </div>
+
 </div>
+
+<!-- GRÁFICO -->
+<script>
+const ctx = document.getElementById('grafico');
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ nombres|tojson }},
+        datasets: [{
+            label: 'Ventas por cliente',
+            data: {{ totales|tojson }},
+            backgroundColor: '#111'
+        }]
+    }
+});
+</script>
 
 <!-- BARRA INFERIOR -->
 <div class="bottom-nav">
