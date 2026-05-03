@@ -227,7 +227,13 @@ def dashboard():
         ventas=ventas,
         ganancia=ganancia
     )
+@app.route("/productos_json")
+def productos_json():
+    db = get_db()
+    productos = db.execute("SELECT * FROM productos").fetchall()
+    db.close()
 
+    return jsonify([dict(p) for p in productos])
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
