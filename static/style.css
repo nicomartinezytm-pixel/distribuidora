@@ -1,184 +1,65 @@
-/* =========================
-   BASE GENERAL
-========================= */
-
-body{
-    margin:0;
-    font-family:system-ui, Arial, sans-serif;
-
-    /* 🌌 FONDO PRO (DARK GRADIENT) */
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
     background: linear-gradient(135deg, #0f172a, #1e293b);
-
-    color:#e5e7eb;
-    -webkit-tap-highlight-color: transparent;
+    background-attachment: fixed;
+    color: #e5e7eb;
+    min-height: 100vh;
 }
-
-/* =========================
-   CONTENEDOR
-========================= */
-
-.container{
-    padding:15px;
-    max-width:900px;
-    margin:auto;
-    padding-bottom:90px;
+.container {
+    padding: 15px;
+    max-width: 900px;
+    margin: auto;
+    padding-bottom: 100px;
 }
-
-/* =========================
-   TITULOS
-========================= */
-
-h1{
-    text-align:center;
-    font-size:22px;
-    margin:15px 0;
-    font-weight:700;
-    color:#ffffff;
-}
-
-h2, h3{
-    color:#e5e7eb;
-}
-
-/* =========================
-   CARDS (GLASS STYLE PRO)
-========================= */
-
-.card{
-    background: rgba(255,255,255,0.06);
+.card {
+    background: rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    padding:14px;
-    margin:12px 0;
-    border-radius:16px;
-
-    border:1px solid rgba(255,255,255,0.1);
-
-    box-shadow:0 8px 25px rgba(0,0,0,0.35);
+    padding: 16px;
+    margin: 12px 0;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
-
-/* =========================
-   INPUTS
-========================= */
-
-input{
-    width:100%;
-    padding:10px;
-    margin:6px 0;
-
-    border-radius:10px;
-    border:1px solid rgba(255,255,255,0.2);
-
-    outline:none;
-    font-size:14px;
-
-    background: rgba(255,255,255,0.08);
-    color:white;
+input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0,0,0,0.2);
+    color: white;
+    box-sizing: border-box; /* Fundamental */
 }
-
-input::placeholder{
-    color:#cbd5e1;
+button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #3b82f6;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
 }
-
-/* =========================
-   BOTONES
-========================= */
-
-button{
-    width:100%;
-    padding:10px;
-
-    border:none;
-    border-radius:10px;
-
-    background:#3b82f6;
-    color:white;
-
-    font-weight:600;
-    font-size:14px;
-
-    cursor:pointer;
-}
-
-button:active{
-    transform:scale(0.98);
-}
-
-button.red{
-    background:#ef4444;
-}
-
-/* =========================
-   LINKS BOTONES
-========================= */
-
-a{
-    text-decoration:none;
-}
-
-/* =========================
-   BOTTOM NAV (MÓVIL PRO)
-========================= */
-
-.bottom-nav{
-    position:fixed;
-    bottom:0;
-    left:0;
-    width:100%;
-    height:65px;
-
-    background: rgba(15,23,42,0.95);
+button.red { background: #ef4444; }
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(10px);
-
-    display:flex;
-    justify-content:space-around;
-    align-items:center;
-
-    border-top:1px solid rgba(255,255,255,0.1);
-
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-bottom: env(safe-area-inset-bottom);
 }
-
-.bottom-nav a{
-    color:#e5e7eb;
-    text-decoration:none;
-    font-size:12px;
-    text-align:center;
-    opacity:0.8;
-    flex:1;
-}
-
-.bottom-nav a:hover{
-    opacity:1;
-}
-
-/* =========================
-   PRODUCTOS / LISTAS
-========================= */
-
-.producto-item{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-/* =========================
-   RESPONSIVE MOBILE
-========================= */
-
-@media (max-width:600px){
-
-    h1{
-        font-size:18px;
-    }
-
-    .card{
-        margin:10px 0;
-        padding:12px;
-    }
-
-    button{
-        font-size:13px;
-    }
+.bottom-nav a {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 11px;
+    text-align: center;
+    flex: 1;
 }
