@@ -1,68 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dashboard - Distribuidora Pro</title>
+    <title>Dashboard Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<h1>📊 Dashboard</h1>
-
-<div class="nav">
-    <a href="/"><button>🏠 Inicio</button></a>
-    <a href="/vender"><button>🧾 Ventas</button></a>
-    <a href="/boletas"><button>💳 Boletas</button></a>
-    <a href="/clientes"><button>👥 Clientes</button></a>
-</div>
+<h1>📊 Dashboard Empresarial</h1>
 
 <div class="container">
 
-    <!-- ========================= -->
-    <!-- 💰 RESUMEN GENERAL -->
-    <!-- ========================= -->
+<div class="card">
+    <h2>💰 Resumen</h2>
+    <p>Ventas: ${{ total_ventas }}</p>
+    <p>Compras: ${{ total_compras }}</p>
+    <p>Ganancia total: ${{ ganancia }}</p>
+</div>
 
-    <div class="card">
-        <h2>💰 Resumen General</h2>
+<div class="card">
+    <h2>📅 Mensual</h2>
+    <p>Ventas mes: ${{ ventas_mes }}</p>
+    <p>Compras mes: ${{ compras_mes }}</p>
+    <h3>Ganancia mes: ${{ ganancia_mes }}</h3>
+</div>
 
-        <p>📦 Total ventas: ${{ total }}</p>
-        <p>🛒 Total compras: ${{ compras_total }}</p>
-        <p>📊 Cantidad de ventas: {{ ventas }}</p>
-    </div>
-
-    <!-- ========================= -->
-    <!-- 📅 BALANCE MENSUAL -->
-    <!-- ========================= -->
-
-    <div class="card">
-        <h2>📅 Balance Mensual</h2>
-
-        <p>💰 Ventas del mes: ${{ ventas_mes }}</p>
-        <p>🛒 Compras del mes: ${{ compras_mes }}</p>
-
-        <hr>
-
-        <h3>
-            🔥 Ganancia del mes: ${{ ganancia_mes }}
-        </h3>
-    </div>
-
-    <!-- ========================= -->
-    <!-- 🏆 TOP CLIENTES -->
-    <!-- ========================= -->
-
-    <div class="card">
-        <h2>🏆 Top Clientes</h2>
-
-        {% for c in ranking %}
-            <div class="card">
-                👤 {{ c['nombre'] }}<br>
-                💰 Total: ${{ c['total'] }}
-            </div>
-        {% endfor %}
-    </div>
+<div class="card">
+    <h2>📊 Ventas vs Compras</h2>
+    <canvas id="grafico"></canvas>
+</div>
 
 </div>
+
+<script>
+new Chart(document.getElementById("grafico"), {
+    type: "bar",
+    data: {
+        labels: ["Ventas", "Compras", "Ganancia"],
+        datasets: [{
+            data: [{{ total_ventas }}, {{ total_compras }}, {{ ganancia }}]
+        }]
+    }
+});
+</script>
 
 </body>
 </html>
