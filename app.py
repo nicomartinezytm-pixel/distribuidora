@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request, redirect, jsonify
+from flask import Flask, render_template, request, redirect
 import sqlite3
 import json
 import os
 
 app = Flask(__name__)
 
-# ---------------- DB ----------------
+# -------- DB --------
 def get_db():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(os.path.join(base_dir, "db.db"))
@@ -13,6 +13,7 @@ def get_db():
     return conn
 
 
+# -------- INIT DB --------
 def init_db():
     db = get_db()
 
@@ -40,7 +41,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS ventas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         cliente_id INTEGER,
-        total REAL
+        total REAL,
+        fecha TEXT DEFAULT (DATE('now'))
     )
     """)
 
@@ -61,7 +63,7 @@ with app.app_context():
     init_db()
 
 
-# ---------------- HOME ----------------
+# -------- HOME --------
 @app.route("/")
 def index():
     db = get_db()
@@ -70,7 +72,7 @@ def index():
     return render_template("index.html", productos=productos)
 
 
-# ---------------- PRODUCTOS ----------------
+# -------- PRODUCTOS --------
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
@@ -99,16 +101,56 @@ def agregar_producto():
     return redirect("/")
 
 
-@app.route("/productos_json")
-def productos_json():
+@app.route("/eliminar_producto/<int:id>")
+def eliminar_producto(id):
     db = get_db()
-    productos = db.execute("SELECT * FROM productos").fetchall()
+    db.execute("DELETE FROM productos WHERE id=?", (id,))
+    db.commit()
     db.close()
+    return redirect("/")
 
-    return jsonify([dict(p) for p in productos])
+
+@app.route("/editar_producto/<int:id>", methods=["POST"])
+def editar_producto(id):
+    db = get_db()
+
+    db.execute("""
+        UPDATE productos
+        SET nombre=?, precio=?, stock=?, tipo_precio=?
+        WHERE id=?
+    """, (
+        request.form["nombre"],
+        request.form["precio"],
+        request.form["stock"],
+        request.form["tipo_precio"],
+        id
+    ))
+
+    db.commit()
+    db.close()
+    return redirect("/")
 
 
-# ---------------- VENTAS ----------------
+# -------- CLIENTES --------
+@app.route("/agregar_cliente", methods=["POST"])
+def agregar_cliente():
+    db = get_db()
+
+    db.execute("""
+        INSERT INTO clientes (nombre, telefono, direccion)
+        VALUES (?, ?, ?)
+    """, (
+        request.form["nombre"],
+        request.form["telefono"],
+        request.form["direccion"]
+    ))
+
+    db.commit()
+    db.close()
+    return redirect("/")
+
+
+# -------- VENTAS --------
 @app.route("/vender")
 def vender():
     return render_template("ventas.html")
@@ -123,7 +165,6 @@ def finalizar_venta():
     nombre = data["cliente"]["nombre"]
     telefono = data["cliente"]["telefono"]
     direccion = data["cliente"]["direccion"]
-
     carrito = data["carrito"]
 
     cursor = db.cursor()
@@ -186,10 +227,10 @@ def finalizar_venta():
     db.commit()
     db.close()
 
-    return jsonify({"ok": True})
+    return {"ok": True}
 
 
-# ---------------- DASHBOARD ----------------
+# -------- DASHBOARD --------
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
@@ -217,5 +258,39 @@ def dashboard():
                            totales=totales)
 
 
+# -------- GANANCIAS DEL DÍA --------
+@app.route("/ganancias")
+def ganancias():
+    db = get_db()
+
+    total_dia = db.execute("""
+        SELECT SUM(total)
+        FROM ventas
+        WHERE fecha = DATE('now')
+    """).fetchone()[0] or 0
+
+    ventas_dia = db.execute("""
+        SELECT COUNT(*)
+        FROM ventas
+        WHERE fecha = DATE('now')
+    """).fetchone()[0]
+
+    clientes = db.execute("""
+        SELECT clientes.nombre, SUM(ventas.total)
+        FROM ventas
+        JOIN clientes ON ventas.cliente_id = clientes.id
+        GROUP BY clientes.id
+        ORDER BY SUM(ventas.total) DESC
+    """).fetchall()
+
+    db.close()
+
+    return render_template("ganancias.html",
+                           total_dia=total_dia,
+                           ventas_dia=ventas_dia,
+                           clientes=clientes)
+
+
+# -------- RUN --------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
