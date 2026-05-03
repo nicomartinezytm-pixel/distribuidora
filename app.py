@@ -58,6 +58,20 @@ def init_db():
     )
     """)
 
+    # 🆕 COMPRAS A MAYORISTAS
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS compras (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        producto TEXT,
+        proveedor TEXT,
+        lugar TEXT,
+        cantidad INTEGER,
+        precio REAL,
+        total REAL,
+        fecha TEXT DEFAULT (DATE('now'))
+    )
+    """)
+
     db.commit()
     db.close()
 
@@ -112,6 +126,30 @@ def eliminar_producto(id):
     return redirect("/")
 
 
+# ---------------- COMPRAS A MAYORISTAS ----------------
+@app.route("/agregar_compra", methods=["POST"])
+def agregar_compra():
+    db = get_db()
+
+    producto = request.form["producto"]
+    proveedor = request.form["proveedor"]
+    lugar = request.form["lugar"]
+    cantidad = int(request.form["cantidad"])
+    precio = float(request.form["precio"])
+
+    total = cantidad * precio
+
+    db.execute("""
+        INSERT INTO compras (producto, proveedor, lugar, cantidad, precio, total)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (producto, proveedor, lugar, cantidad, precio, total))
+
+    db.commit()
+    db.close()
+
+    return jsonify({"ok": True})
+
+
 # ---------------- VENTAS ----------------
 @app.route("/vender")
 def vender():
@@ -159,7 +197,7 @@ def finalizar_venta():
     return jsonify({"ok": True})
 
 
-# ---------------- CLIENTES (CUENTA CORRIENTE) ----------------
+# ---------------- CLIENTES ----------------
 @app.route("/clientes")
 def clientes():
     db = get_db()
@@ -212,12 +250,18 @@ def dashboard():
         LIMIT 5
     """).fetchall()
 
+    # 🆕 total compras
+    compras_total = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
+
     db.close()
 
-    return render_template("dashboard.html",
-                           total=total,
-                           ventas=ventas,
-                           ranking=ranking)
+    return render_template(
+        "dashboard.html",
+        total=total,
+        ventas=ventas,
+        ranking=ranking,
+        compras_total=compras_total
+    )
 
 
 # ---------------- RUN ----------------
