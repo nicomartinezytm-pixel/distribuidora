@@ -9,13 +9,12 @@ app.jinja_env.filters['fromjson'] = json.loads
 def get_db():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(os.path.join(base_dir, "db.db"))
-    conn.row_factory = sqlite3.Row
+    # Esto es CLAVE para que p['nombre'] funcione bien
+    conn.row_factory = sqlite3.Row 
     return conn
 
-# Esta función crea todo de cero con las columnas correctas
 def init_db():
     db = get_db()
-    # TABLA PRODUCTOS (Con unidad y oferta desde el inicio)
     db.execute("""
         CREATE TABLE IF NOT EXISTS productos (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -25,43 +24,30 @@ def init_db():
             unidad TEXT DEFAULT 'Unidad', 
             oferta TEXT DEFAULT ''
         )""")
-    
-    # TABLA COMPRAS (Abastecimiento de la distribuidora)
     db.execute("""
         CREATE TABLE IF NOT EXISTS compras (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            lugar TEXT, 
-            direccion TEXT, 
-            producto TEXT, 
-            cantidad INTEGER, 
-            total REAL, 
-            fecha TEXT DEFAULT (DATETIME('now','localtime'))
+            lugar TEXT, direccion TEXT, producto TEXT, 
+            cantidad INTEGER, total REAL, fecha TEXT DEFAULT (DATETIME('now','localtime'))
         )""")
-    
-    # TABLA VENTAS
     db.execute("""
         CREATE TABLE IF NOT EXISTS ventas (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            cliente TEXT, 
-            direccion TEXT, 
-            telefono TEXT, 
-            detalle TEXT, 
-            total REAL, 
-            pagado REAL DEFAULT 0, 
-            saldo REAL DEFAULT 0, 
-            estado TEXT DEFAULT 'fiado', 
-            fecha TEXT DEFAULT (DATETIME('now','localtime'))
+            cliente TEXT, direccion TEXT, telefono TEXT, detalle TEXT, 
+            total REAL, pagado REAL DEFAULT 0, saldo REAL DEFAULT 0, 
+            estado TEXT DEFAULT 'fiado', fecha TEXT DEFAULT (DATETIME('now','localtime'))
         )""")
     db.commit()
     db.close()
 
-# Ejecutamos la creación de tablas
 init_db()
 
 @app.route("/")
 def index():
     db = get_db()
-    productos = db.execute("SELECT * FROM productos ORDER BY nombre ASC").fetchall()
+    # Usamos dict() para que tojson no falle en el modal
+    productos_rows = db.execute("SELECT * FROM productos ORDER BY nombre ASC").fetchall()
+    productos = [dict(row) for row in productos_rows]
     db.close()
     return render_template("index.html", productos=productos)
 
@@ -69,21 +55,41 @@ def index():
 def agregar_producto():
     try:
         db = get_db()
-        nombre = request.form.get("nombre")
-        precio = float(request.form.get("precio", 0))
-        stock = int(request.form.get("stock", 0))
-        unidad = request.form.get("unidad", "Unidad")
-        oferta = request.form.get("oferta", "")
-        
         db.execute("INSERT INTO productos (nombre, precio, stock, unidad, oferta) VALUES (?, ?, ?, ?, ?)", 
-                   (nombre, precio, stock, unidad, oferta))
+                   (request.form['nombre'], float(request.form['precio']), 
+                    int(request.form['stock']), request.form.get('unidad', 'Unidad'), 
+                    request.form.get('oferta', '')))
         db.commit()
         db.close()
         return redirect("/")
     except Exception as e:
-        # Esto te dirá exactamente qué falla si vuelve a pasar
-        return f"Error detallado: {e}", 500
+        return f"Error: {e}", 500
 
+# --- NUEVA RUTA: EDITAR PRODUCTO ---
+@app.route("/editar_producto", methods=["POST"])
+def editar_producto():
+    try:
+        db = get_db()
+        db.execute("""UPDATE productos SET nombre=?, precio=?, stock=?, unidad=?, oferta=? WHERE id=?""",
+                   (request.form['nombre'], float(request.form['precio']), 
+                    int(request.form['stock']), request.form['unidad'], 
+                    request.form['oferta'], int(request.form['id'])))
+        db.commit()
+        db.close()
+        return redirect("/")
+    except Exception as e:
+        return f"Error al editar: {e}", 500
+
+# --- NUEVA RUTA: ELIMINAR PRODUCTO ---
+@app.route("/eliminar_producto/<int:id>")
+def eliminar_producto(id):
+    db = get_db()
+    db.execute("DELETE FROM productos WHERE id=?", (id,))
+    db.commit()
+    db.close()
+    return redirect("/")
+
+# --- LAS DEMÁS RUTAS (COMPRAS, VENTAS, ETC) ---
 @app.route("/compras")
 def compras():
     db = get_db()
@@ -95,15 +101,11 @@ def compras():
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
-    lugar = request.form.get("lugar")
-    direccion = request.form.get("direccion")
-    producto = request.form.get("producto")
-    cantidad = int(request.form.get("cantidad", 0))
-    total = float(request.form.get("total", 0))
-    
     db.execute("INSERT INTO compras (lugar, direccion, producto, cantidad, total) VALUES (?, ?, ?, ?, ?)",
-               (lugar, direccion, producto, cantidad, total))
-    db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cantidad, producto))
+               (request.form['lugar'], request.form['direccion'], request.form['producto'], 
+                int(request.form['cantidad']), float(request.form['total'])))
+    db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", 
+               (int(request.form['cantidad']), request.form['producto']))
     db.commit()
     db.close()
     return redirect("/compras")
