@@ -1,61 +1,73 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>📦 Sistema Distribuidora Pro</h1>
-
 <div class="container">
+
+    <h1>📦 Sistema Distribuidora Pro</h1>
 
     <!-- ================= PRODUCTOS ================= -->
     <div class="card">
+
         <h2>➕ Nuevo Producto</h2>
 
         <form method="POST" action="/agregar_producto">
 
             <input name="nombre" placeholder="Nombre del producto" required>
-            <input name="precio" placeholder="Precio" required>
+            <input name="precio" placeholder="Precio" step="0.01" required>
             <input name="stock" placeholder="Stock inicial" required>
 
             <button type="submit">Guardar producto</button>
 
         </form>
+
     </div>
 
     <!-- ================= LISTA PRODUCTOS ================= -->
     <div class="card">
+
         <h2>📦 Productos</h2>
 
-        {% for p in productos %}
-        <div class="card">
-            <b>{{ p['nombre'] }}</b><br>
-            💰 Precio: ${{ p['precio'] }}<br>
-            📦 Stock: {{ p['stock'] }}<br>
+        {% if productos %}
+            {% for p in productos %}
+                <div class="card">
 
-            <a href="/eliminar_producto/{{ p['id'] }}">
-                <button>❌ Eliminar</button>
-            </a>
-        </div>
-        {% endfor %}
+                    <b>📌 {{ p['nombre'] }}</b><br>
+                    💰 Precio: ${{ p['precio'] }}<br>
+                    📦 Stock: {{ p['stock'] }}<br>
+
+                    <a href="/eliminar_producto/{{ p['id'] }}">
+                        <button>❌ Eliminar</button>
+                    </a>
+
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No hay productos cargados.</p>
+        {% endif %}
 
     </div>
 
     <!-- ================= COMPRAS MAYORISTAS ================= -->
     <div class="card">
+
         <h2>🛒 Compras Mayoristas</h2>
 
         <form method="POST" action="/agregar_compra">
 
             <input name="producto" placeholder="Producto (ej: Alfajores)" required>
-            <input name="lugar" placeholder="Lugar de compra (ej: Carrefour)" required>
-            <input name="cantidad" placeholder="Cantidad comprada" required>
-            <input name="total" placeholder="Total pagado ($)" required>
+            <input name="lugar" placeholder="Lugar de compra (ej: Carrefour / Mayorista)" required>
+            <input name="cantidad" type="number" placeholder="Cantidad comprada" required>
+            <input name="total" type="number" step="0.01" placeholder="Total pagado ($)" required>
 
             <button type="submit">Registrar compra</button>
 
         </form>
 
-        <p style="margin-top:10px; font-size:13px;">
-            📌 El sistema calcula automáticamente el precio unitario y suma stock al producto si existe.
+        <p style="font-size:13px; margin-top:10px;">
+            📌 Esta compra suma stock automáticamente si el producto existe en la base.
+            El sistema calcula el precio unitario automáticamente.
         </p>
+
     </div>
 
 </div>
