@@ -3,28 +3,26 @@
 <h2>Registrar Compra</h2>
 <div class="card">
     <form action="/agregar_compra" method="POST">
-        <input type="text" name="lugar" placeholder="¿Dónde compraste? (Proveedor)">
+        <input type="text" name="lugar" placeholder="Proveedor / Lugar">
         
-        <label>Producto:</label>
-        <select name="producto" required>
-            <option value="">Seleccionar producto...</option>
+        <input list="lista-prods" name="producto" placeholder="Escribí o seleccioná producto" required>
+        <datalist id="lista-prods">
             {% for p in productos %}
-            <option value="{{ p.nombre }}">{{ p.nombre }}</option>
+            <option value="{{ p.nombre }}">
             {% endfor %}
-        </select>
+        </datalist>
 
-        <input type="number" name="cantidad" placeholder="Cantidad que entró" required>
-        <input type="number" step="0.01" name="total" placeholder="Costo total de la compra $" required>
-        
-        <button type="submit">Guardar Entrada de Stock</button>
+        <input type="number" name="cantidad" placeholder="Cantidad" required>
+        <input type="number" step="0.01" name="total" placeholder="Costo total $" required>
+        <button type="submit">Guardar Compra</button>
     </form>
 </div>
 
-<h3>Últimos Movimientos</h3>
+<h3>Historial</h3>
 {% for h in historial %}
-<div class="card" style="font-size: 14px;">
-    <b>{{ h.producto }}</b> - {{ h.cantidad }} unidades<br>
-    <small>Proveedor: {{ h.lugar }} | Total: ${{ h.total }}</small>
+<div class="card">
+    <b>{{ h.producto }}</b> ({{ h.cantidad }} un.) - ${{ h.total }}<br>
+    <small>{{ h.lugar }} - {{ h.fecha }}</small>
 </div>
 {% endfor %}
 {% endblock %}
