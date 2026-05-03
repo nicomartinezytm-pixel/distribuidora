@@ -28,16 +28,15 @@
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1; padding: 12px; font-weight: bold;">💰 Pagar</button>
         
-        <!-- BOTÓN CON ENLACE DIRECTO SIN JAVASCRIPT COMPLEJO -->
-        <a href="https://wa.me/{{ v.whatsapp|replace(' ', '')|replace('-', '') }}?text=Hola%20{{ v.cliente }},%20tenes%20un%20saldo%20de%20${{ v.saldo }}" 
-           target="_blank" 
-           style="flex:1; background:#22c55e; text-decoration:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; text-align:center; display:flex; align-items:center; justify-content:center;">
+        <!-- Botón que activa la función mágica -->
+        <button onclick="abrirChat('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" 
+                style="flex:1; background:#22c55e; border:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;">
             📲 WhatsApp
-        </a>
+        </button>
     </div>
 </div>
 
-<!-- Modal para registrar pago (Sigue igual) -->
+<!-- Modal para registrar pago (Sin cambios) -->
 <div id="m-{{v.id}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
     <div class="card" style="margin:20% auto; width: 85%; background:#1e293b; padding: 25px;">
         <h3>Registrar entrega</h3>
@@ -50,4 +49,36 @@
     </div>
 </div>
 {% endfor %}
+
+<script>
+function abrirChat(numero, nombre, saldo) {
+    // 1. Limpiamos el número de cualquier cosa que no sea dígito
+    let n = numero.replace(/\D/g, '');
+    
+    // 2. Si el número tiene 10 dígitos (ej: 3541228986)
+    // Le pegamos el 549 adelante automáticamente
+    if (n.length === 10) {
+        n = "549" + n;
+    } 
+    // Si el usuario puso el 15 (ej: 3541 15 228986), se lo volamos
+    else if (n.length === 12 && n.substring(4, 6) === "15") {
+        n = n.substring(0, 4) + n.substring(6);
+        if (!n.startsWith("54")) n = "549" + n;
+    }
+    // Si no tiene el 54 al principio, se lo ponemos
+    else if (n.length > 0 && !n.startsWith("54")) {
+        n = "549" + n;
+    }
+
+    let mensaje = encodeURIComponent(`Hola ${nombre}! Tenés un saldo pendiente de $${saldo}. ¿Cómo andás?`);
+    
+    // 3. LA CLAVE: Usamos api.whatsapp.com que es lo más compatible
+    let url = "https://api.whatsapp.com/send?phone=" + n + "&text=" + mensaje;
+    
+    // Intentamos abrirlo. Si falla el pop-up, redirigimos la pestaña
+    if (!window.open(url, '_blank')) {
+        window.location.href = url;
+    }
+}
+</script>
 {% endblock %}
