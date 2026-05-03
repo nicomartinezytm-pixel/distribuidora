@@ -4,8 +4,6 @@ import json
 import os
 
 app = Flask(__name__)
-
-# Filtro para que el HTML pueda leer el detalle JSON de las ventas
 app.jinja_env.filters['fromjson'] = json.loads
 
 def get_db():
@@ -16,44 +14,13 @@ def get_db():
 
 def init_db():
     db = get_db()
-    # Tabla de productos
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS productos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            nombre TEXT, 
-            precio REAL, 
-            stock INTEGER
-        )""")
-    # Tabla de compras (Entrada de mercadería)
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS compras (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            lugar TEXT, 
-            producto TEXT, 
-            cantidad INTEGER, 
-            total REAL, 
-            fecha TEXT DEFAULT (DATETIME('now','localtime'))
-        )""")
-    # Tabla de ventas (Boletas y Deudas)
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS ventas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            cliente TEXT, 
-            direccion TEXT, 
-            detalle TEXT, 
-            total REAL, 
-            pagado REAL DEFAULT 0, 
-            saldo REAL DEFAULT 0, 
-            estado TEXT DEFAULT 'fiado', 
-            fecha TEXT DEFAULT (DATETIME('now','localtime'))
-        )""")
+    db.execute("CREATE TABLE IF NOT EXISTS productos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, precio REAL, stock INTEGER)")
+    db.execute("CREATE TABLE IF NOT EXISTS compras (id INTEGER PRIMARY KEY AUTOINCREMENT, lugar TEXT, producto TEXT, cantidad INTEGER, total REAL, fecha TEXT DEFAULT (DATETIME('now','localtime')))")
+    db.execute("CREATE TABLE IF NOT EXISTS ventas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, direccion TEXT, detalle TEXT, total REAL, pagado REAL DEFAULT 0, saldo REAL DEFAULT 0, estado TEXT DEFAULT 'fiado', fecha TEXT DEFAULT (DATETIME('now','localtime')))")
     db.commit()
     db.close()
 
-# Inicializar la base de datos al arrancar
 init_db()
-
-# --- RUTAS DE INVENTARIO ---
 
 @app.route("/")
 def index():
@@ -72,10 +39,8 @@ def productos_json():
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
-    nombre = request.form["nombre"]
-    precio = float(request.form["precio"])
-    stock = int(request.form["stock"])
-    db.execute("INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)", (nombre, precio, stock))
+    db.execute("INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)", 
+               (request.form["nombre"], float(request.form["precio"]), int(request.form["stock"])))
     db.commit()
     db.close()
     return redirect("/")
@@ -88,27 +53,17 @@ def eliminar_producto(id):
     db.close()
     return redirect("/")
 
-# --- RUTAS DE COMPRAS (ENTRADA) ---
-
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
-    lugar = request.form["lugar"]
     prod_nom = request.form["producto"]
     cant = int(request.form["cantidad"])
-    total = float(request.form["total"])
-    
     db.execute("INSERT INTO compras (lugar, producto, cantidad, total) VALUES (?, ?, ?, ?)", 
-               (lugar, prod_nom, cant, total))
-    
-    # Actualiza stock si el nombre coincide exactamente con un producto existente
+               (request.form["lugar"], prod_nom, cant, float(request.form["total"])))
     db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cant, prod_nom))
-    
     db.commit()
     db.close()
     return redirect("/")
-
-# --- RUTAS DE VENTAS (SALIDA) ---
 
 @app.route("/vender")
 def vender():
@@ -120,43 +75,23 @@ def finalizar_venta():
     data = json.loads(request.form["data"])
     total_venta = 0
     detalle_lista = []
-    
     for item in data["carrito"]:
         p = db.execute("SELECT * FROM productos WHERE id=?", (item["id"],)).fetchone()
         if p:
-            subtotal = p["precio"] * item["cantidad"]
-            total_venta += subtotal
-            detalle_lista.append({
-                "nombre": p["nombre"], 
-                "cantidad": item["cantidad"], 
-                "precio": p["precio"], 
-                "subtotal": subtotal
-            })
-            # Restar stock
+            sub = p["precio"] * item["cantidad"]
+            total_venta += sub
+            detalle_lista.append({"nombre": p["nombre"], "cantidad": item["cantidad"], "precio": p["precio"], "subtotal": sub})
             db.execute("UPDATE productos SET stock = stock - ? WHERE id=?", (item["cantidad"], item["id"]))
     
-    pagado_inicial = float(data.get("pagado") or 0)
-    saldo_pendiente = max(0, total_venta - pagado_inicial)
+    pagado = float(data.get("pagado") or 0)
+    saldo = max(0, total_venta - pagado)
+    estado = "pagado" if saldo <= 0 else ("parcial" if pagado > 0 else "fiado")
     
-    # Definir estado inicial
-    if saldo_pendiente <= 0:
-        estado = "pagado"
-    elif pagado_inicial > 0:
-        estado = "parcial"
-    else:
-        estado = "fiado"
-    
-    db.execute("""
-        INSERT INTO ventas (cliente, direccion, detalle, total, pagado, saldo, estado) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (data["cliente"]["nombre"], data["cliente"]["direccion"], json.dumps(detalle_lista), 
-          total_venta, pagado_inicial, saldo_pendiente, estado))
-    
+    db.execute("INSERT INTO ventas (cliente, direccion, detalle, total, pagado, saldo, estado) VALUES (?, ?, ?, ?, ?, ?, ?)",
+               (data["cliente"]["nombre"], data["cliente"]["direccion"], json.dumps(detalle_lista), total_venta, pagado, saldo, estado))
     db.commit()
     db.close()
     return jsonify({"ok": True})
-
-# --- GESTIÓN DE BOLETAS Y COBROS ---
 
 @app.route("/boletas")
 def boletas():
@@ -168,26 +103,14 @@ def boletas():
 @app.route("/pagar_boleta/<int:id>", methods=["POST"])
 def pagar_boleta(id):
     db = get_db()
-    monto_nuevo_pago = float(request.form.get("monto", 0))
-    
+    monto = float(request.form.get("monto", 0))
     venta = db.execute("SELECT total, pagado FROM ventas WHERE id=?", (id,)).fetchone()
-    
     if venta:
-        nuevo_total_pagado = venta["pagado"] + monto_nuevo_pago
-        nuevo_saldo = max(0, venta["total"] - nuevo_total_pagado)
-        
-        if nuevo_saldo <= 0:
-            nuevo_estado = "pagado"
-        else:
-            nuevo_estado = "parcial"
-            
-        db.execute("""
-            UPDATE ventas 
-            SET pagado = ?, saldo = ?, estado = ? 
-            WHERE id = ?
-        """, (nuevo_total_pagado, nuevo_saldo, nuevo_estado, id))
+        n_pagado = venta["pagado"] + monto
+        n_saldo = max(0, venta["total"] - n_pagado)
+        estado = "pagado" if n_saldo <= 0 else "parcial"
+        db.execute("UPDATE ventas SET pagado=?, saldo=?, estado=? WHERE id=?", (n_pagado, n_saldo, estado, id))
         db.commit()
-    
     db.close()
     return redirect("/boletas")
 
@@ -195,47 +118,35 @@ def pagar_boleta(id):
 def eliminar_venta(id):
     db = get_db()
     venta = db.execute("SELECT detalle FROM ventas WHERE id=?", (id,)).fetchone()
-    
     if venta:
-        detalle = json.loads(venta["detalle"])
-        for item in detalle:
-            # Devolvemos el stock al anular la boleta
-            db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", 
-                       (item["cantidad"], item["nombre"]))
-    
+        for item in json.loads(venta["detalle"]):
+            db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (item["cantidad"], item["nombre"]))
     db.execute("DELETE FROM ventas WHERE id=?", (id,))
     db.commit()
     db.close()
     return redirect("/boletas")
 
-# --- CLIENTES Y DASHBOARD ---
-
 @app.route("/clientes")
 def clientes():
     db = get_db()
-    # Agrupa por cliente y suma sus estadísticas
-    res = db.execute("""
-        SELECT cliente, 
-               SUM(total) as total, 
-               COUNT(id) as visitas
-        FROM ventas 
-        GROUP BY cliente 
-        ORDER BY total DESC
-    """).fetchall()
+    query = """
+        SELECT cliente, direccion, SUM(total) as total_gastado, COUNT(id) as total_compras,
+        ROUND(AVG(total), 2) as promedio_compra,
+        (SELECT json_extract(detalle, '$[0].nombre') FROM ventas v2 WHERE v2.cliente = ventas.cliente 
+         GROUP BY json_extract(detalle, '$[0].nombre') ORDER BY COUNT(*) DESC LIMIT 1) as producto_top
+        FROM ventas GROUP BY cliente ORDER BY total_gastado DESC
+    """
+    res = db.execute(query).fetchall()
     db.close()
     return render_template("clientes.html", clientes=res)
 
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
-    ventas_totales = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
-    compras_totales = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
+    v = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
+    c = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
     db.close()
-    return render_template("dashboard.html", 
-                           total_ventas=ventas_totales, 
-                           total_compras=compras_totales, 
-                           ganancia=ventas_totales - compras_totales)
+    return render_template("dashboard.html", total_ventas=v, total_compras=c, ganancia=v-c)
 
 if __name__ == "__main__":
-    # Cambia el puerto si es necesario para tu hosting (10000 es común en Render)
     app.run(host="0.0.0.0", port=10000)
