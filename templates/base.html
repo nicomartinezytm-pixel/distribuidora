@@ -1,72 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Distribuidora App</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="stylesheet" href="/static/style.css">
-
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial;
-            background: #f2f2f2;
-            padding-bottom: 75px;
-        }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 65px;
-            background: #111;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid #333;
-            z-index: 9999;
-        }
-
-        .nav-item {
-            color: white;
-            text-decoration: none;
-            text-align: center;
-            font-size: 12px;
-            flex: 1;
-        }
-
-        .nav-item span {
-            display: block;
-            font-size: 11px;
-        }
-
-        .nav-item:active {
-            background: #222;
-            border-radius: 10px;
-        }
-    </style>
+<title>Distribuidora</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;font-family:Arial;background:#f2f2f2;padding-bottom:70px}
+.nav{position:fixed;bottom:0;width:100%;height:60px;background:#111;display:flex;justify-content:space-around;align-items:center}
+.nav a{color:white;text-decoration:none}
+.container{padding:10px}
+.card{background:white;padding:10px;margin:10px;border-radius:10px}
+</style>
 </head>
-
 <body>
 
-    {% block content %}{% endblock %}
+{% block content %}{% endblock %}
 
-    <div class="bottom-nav">
-
-        <a href="/" class="nav-item">
-            🏠<span>Inicio</span>
-        </a>
-
-        <a href="/vender" class="nav-item">
-            💰<span>Vender</span>
-        </a>
-
-        <a href="/dashboard" class="nav-item">
-            📊<span>Stats</span>
-        </a>
-
-    </div>
+<div class="nav">
+<a href="/">🏠</a>
+<a href="/vender">💰</a>
+<a href="/dashboard">📊</a>
+<a href="/clientes">👥</a>
+</div>
 
 </body>
 </html>
