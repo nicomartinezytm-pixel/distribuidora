@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clientes</title>
+</head>
+<body>
+
+<h1>👥 Cuenta Corriente</h1>
+
+<a href="/"><button>⬅ Volver</button></a>
+
+<hr>
+
+<h2>💰 Clientes y compras</h2>
+
+{% for c in clientes %}
+    <div style="border:1px solid #ccc; padding:10px; margin:5px;">
+        <b>{{c['nombre']}}</b><br>
+        Total comprado: ${{c['total_comprado']}}
+    </div>
+{% endfor %}
+
+<hr>
+
+<h2>⚠️ Deudas</h2>
+
+{% for d in deudas %}
+    <div style="color:red;">
+        {{d['nombre']}} - debe ${{d['deuda']}}
+    </div>
+{% endfor %}
+
+</body>
+</html>
