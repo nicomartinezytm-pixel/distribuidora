@@ -7,42 +7,23 @@
 
 <body>
 
-<h1>📊 Dashboard Empresa</h1>
+<{% extends "base.html" %}
+{% block content %}
 
-<div>
+<h1>📊 Dashboard</h1>
 
-<h2>💰 General</h2>
+<div class="card">
+<h2>General</h2>
 <p>Ventas: ${{ total_ventas or 0 }}</p>
 <p>Compras: ${{ total_compras or 0 }}</p>
 <p>Ganancia: ${{ ganancia or 0 }}</p>
-<p>Margen: {{ margen|default(0)|round(2) }}%</p>
-
-<hr>
-
-<h2>📅 Mensual</h2>
-<p>Ventas mes: ${{ ventas_mes or 0 }}</p>
-<p>Compras mes: ${{ compras_mes or 0 }}</p>
-<p>Ganancia mes: ${{ ganancia_mes or 0 }}</p>
-
 </div>
 
-<canvas id="grafico"></canvas>
+<div class="card">
+<h2>Mensual</h2>
+<p>Ventas: ${{ ventas_mes or 0 }}</p>
+<p>Compras: ${{ compras_mes or 0 }}</p>
+<p>Ganancia: ${{ ganancia_mes or 0 }}</p>
+</div>
 
-<script>
-new Chart(document.getElementById("grafico"), {
-    type: "bar",
-    data: {
-        labels: ["Ventas", "Compras", "Ganancia"],
-        datasets: [{
-            data: [
-                {{ total_ventas or 0 }},
-                {{ total_compras or 0 }},
-                {{ ganancia or 0 }}
-            ]
-        }]
-    }
-});
-</script>
-
-</body>
-</html>
+{% endblock %}
