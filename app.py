@@ -17,20 +17,15 @@ def get_db():
 def init_db():
     db = get_db()
 
-    # 📦 PRODUCTOS
     db.execute("""
     CREATE TABLE IF NOT EXISTS productos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT,
         precio REAL,
-        stock INTEGER,
-        tipo_precio TEXT,
-        unidades INTEGER DEFAULT 1,
-        oferta_unidades INTEGER DEFAULT 1
+        stock INTEGER
     )
     """)
 
-    # 👥 CLIENTES
     db.execute("""
     CREATE TABLE IF NOT EXISTS clientes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +35,6 @@ def init_db():
     )
     """)
 
-    # 🧾 VENTAS
     db.execute("""
     CREATE TABLE IF NOT EXISTS ventas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,19 +44,6 @@ def init_db():
     )
     """)
 
-    # 💳 BOLETAS
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS boletas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        cliente_id INTEGER,
-        total REAL,
-        pagado REAL DEFAULT 0,
-        estado TEXT DEFAULT 'pendiente',
-        fecha TEXT DEFAULT (DATETIME('now','localtime'))
-    )
-    """)
-
-    # 🛒 COMPRAS A MAYORISTAS
     db.execute("""
     CREATE TABLE IF NOT EXISTS compras (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,21 +81,11 @@ def agregar_producto():
     nombre = request.form["nombre"]
     precio = float(request.form["precio"])
     stock = int(request.form["stock"])
-    tipo = request.form["tipo_precio"]
-
-    unidades = 1
-    oferta_unidades = 1
-
-    if tipo == "cantidad":
-        unidades = int(request.form.get("unidades") or 1)
-
-    if tipo == "oferta":
-        oferta_unidades = int(request.form.get("oferta_unidades") or 1)
 
     db.execute("""
-        INSERT INTO productos (nombre, precio, stock, tipo_precio, unidades, oferta_unidades)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (nombre, precio, stock, tipo, unidades, oferta_unidades))
+        INSERT INTO productos (nombre, precio, stock)
+        VALUES (?, ?, ?)
+    """, (nombre, precio, stock))
 
     db.commit()
     db.close()
@@ -143,6 +114,12 @@ def agregar_compra():
 
     total = cantidad * precio
 
+    # 📦 sumar stock automáticamente
+    prod = db.execute("SELECT * FROM productos WHERE nombre=?", (producto,)).fetchone()
+
+    if prod:
+        db.execute("UPDATE productos SET stock = stock + ? WHERE nombre=?", (cantidad, producto))
+
     db.execute("""
         INSERT INTO compras (producto, proveedor, lugar, cantidad, precio, total)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -151,15 +128,10 @@ def agregar_compra():
     db.commit()
     db.close()
 
-    return jsonify({"ok": True})
+    return redirect("/")
 
 
 # ---------------- VENTAS ----------------
-@app.route("/vender")
-def vender():
-    return render_template("ventas.html")
-
-
 @app.route("/finalizar_venta", methods=["POST"])
 def finalizar_venta():
     db = get_db()
@@ -180,10 +152,12 @@ def finalizar_venta():
     total = 0
 
     for item in carrito:
-        prod = db.execute("SELECT precio FROM productos WHERE id=?", (item["id"],)).fetchone()
+        prod = db.execute("SELECT * FROM productos WHERE id=?", (item["id"],)).fetchone()
+
         subtotal = prod["precio"] * item["cantidad"]
         total += subtotal
 
+        # 📦 restar stock automático
         db.execute("""
             UPDATE productos
             SET stock = stock - ?
@@ -201,72 +175,27 @@ def finalizar_venta():
     return jsonify({"ok": True})
 
 
-# ---------------- CLIENTES ----------------
-@app.route("/clientes")
-def clientes():
-    db = get_db()
-
-    clientes = db.execute("""
-        SELECT c.id, c.nombre,
-        COALESCE(SUM(v.total), 0) as total_comprado
-        FROM clientes c
-        LEFT JOIN ventas v ON v.cliente_id = c.id
-        GROUP BY c.id
-        ORDER BY total_comprado DESC
-    """).fetchall()
-
-    db.close()
-
-    return render_template("clientes.html", clientes=clientes)
-
-
-# ---------------- BOLETAS ----------------
-@app.route("/boletas")
-def boletas():
-    db = get_db()
-
-    boletas = db.execute("""
-        SELECT boletas.*, clientes.nombre
-        FROM boletas
-        JOIN clientes ON clientes.id = boletas.cliente_id
-        ORDER BY boletas.id DESC
-    """).fetchall()
-
-    db.close()
-
-    return render_template("boletas.html", boletas=boletas)
-
-
-# ---------------- DASHBOARD ----------------
+# ---------------- DASHBOARD PRO ----------------
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
 
-    total = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
+    total_ventas = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
+    total_compras = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
     ventas = db.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
 
-    ranking = db.execute("""
-        SELECT clientes.nombre, SUM(ventas.total) as total
-        FROM ventas
-        JOIN clientes ON clientes.id = ventas.cliente_id
-        GROUP BY clientes.id
-        ORDER BY total DESC
-        LIMIT 5
-    """).fetchall()
+    ganancia = total_ventas - total_compras
 
-    compras_total = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
-
-    # 📅 BALANCE MENSUAL
     ventas_mes = db.execute("""
         SELECT SUM(total)
         FROM ventas
-        WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now','localtime')
+        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
     """).fetchone()[0] or 0
 
     compras_mes = db.execute("""
         SELECT SUM(total)
         FROM compras
-        WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now','localtime')
+        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
     """).fetchone()[0] or 0
 
     ganancia_mes = ventas_mes - compras_mes
@@ -275,10 +204,10 @@ def dashboard():
 
     return render_template(
         "dashboard.html",
-        total=total,
+        total_ventas=total_ventas,
+        total_compras=total_compras,
         ventas=ventas,
-        ranking=ranking,
-        compras_total=compras_total,
+        ganancia=ganancia,
         ventas_mes=ventas_mes,
         compras_mes=compras_mes,
         ganancia_mes=ganancia_mes
