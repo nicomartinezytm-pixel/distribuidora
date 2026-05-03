@@ -14,7 +14,7 @@ def get_db():
     return conn
 
 
-# -------- INIT DB --------
+# -------- INIT DB (CREA TODO SOLO) --------
 def init_db():
     db = get_db()
 
@@ -24,7 +24,8 @@ def init_db():
         nombre TEXT,
         precio REAL,
         stock INTEGER,
-        tipo_precio TEXT
+        tipo_precio TEXT,
+        extra INTEGER DEFAULT 1
     )
     """)
 
@@ -58,7 +59,7 @@ def init_db():
     db.close()
 
 
-# ejecutar al iniciar app
+# ejecutar al iniciar servidor
 with app.app_context():
     init_db()
 
@@ -77,15 +78,26 @@ def index():
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
+
+    tipo = request.form["tipo_precio"]
+
+    extra = 1
+    if tipo == "cantidad":
+        extra = int(request.form.get("cantidad_extra") or 1)
+    elif tipo == "oferta":
+        extra = int(request.form.get("oferta_unidades") or 1)
+
     db.execute("""
-        INSERT INTO productos (nombre, precio, stock, tipo_precio)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO productos (nombre, precio, stock, tipo_precio, extra)
+        VALUES (?, ?, ?, ?, ?)
     """, (
         request.form["nombre"],
         request.form["precio"],
         request.form["stock"],
-        request.form["tipo_precio"]
+        tipo,
+        extra
     ))
+
     db.commit()
     db.close()
     return redirect("/")
@@ -103,6 +115,7 @@ def eliminar_producto(id):
 @app.route("/editar_producto/<int:id>", methods=["POST"])
 def editar_producto(id):
     db = get_db()
+
     db.execute("""
         UPDATE productos
         SET nombre=?, precio=?, stock=?, tipo_precio=?
@@ -114,6 +127,7 @@ def editar_producto(id):
         request.form["tipo_precio"],
         id
     ))
+
     db.commit()
     db.close()
     return redirect("/")
@@ -123,6 +137,7 @@ def editar_producto(id):
 @app.route("/agregar_cliente", methods=["POST"])
 def agregar_cliente():
     db = get_db()
+
     db.execute("""
         INSERT INTO clientes (nombre, telefono, direccion)
         VALUES (?, ?, ?)
@@ -131,6 +146,7 @@ def agregar_cliente():
         request.form["telefono"],
         request.form["direccion"]
     ))
+
     db.commit()
     db.close()
     return redirect("/")
@@ -150,17 +166,15 @@ def vender():
 def finalizar_venta():
     db = get_db()
 
-    # 🔥 cliente escrito manualmente
     nombre = request.form["cliente_nombre"]
     telefono = request.form["cliente_telefono"]
     direccion = request.form["cliente_direccion"]
 
-    total = float(request.form["total"])
     carrito = json.loads(request.form["carrito"])
 
     cursor = db.cursor()
 
-    # crear cliente nuevo
+    # crear cliente
     cursor.execute("""
         INSERT INTO clientes (nombre, telefono, direccion)
         VALUES (?, ?, ?)
@@ -172,22 +186,51 @@ def finalizar_venta():
     cursor.execute("""
         INSERT INTO ventas (cliente_id, total)
         VALUES (?, ?)
-    """, (cliente_id, total))
+    """, (cliente_id, 0))
 
     venta_id = cursor.lastrowid
 
-    # detalle venta + stock
+    total = 0
+
     for item in carrito:
+        prod = db.execute("""
+            SELECT precio, tipo_precio, extra
+            FROM productos WHERE id=?
+        """, (item["id"],)).fetchone()
+
+        precio = prod["precio"]
+        tipo = prod["tipo_precio"]
+        extra = prod["extra"]
+
+        cantidad = item["cantidad"]
+
+        # 🔥 LÓGICA DE PRECIOS
+        if tipo == "unidad":
+            subtotal = precio * cantidad
+
+        elif tipo == "cantidad":
+            subtotal = precio * cantidad * extra
+
+        elif tipo == "oferta":
+            subtotal = (precio * cantidad * extra) * 0.9
+
+        else:
+            subtotal = precio * cantidad
+
+        total += subtotal
+
         db.execute("""
             INSERT INTO detalle_venta (venta_id, producto_id, cantidad)
             VALUES (?, ?, ?)
-        """, (venta_id, item["id"], item["cantidad"]))
+        """, (venta_id, item["id"], cantidad))
 
         db.execute("""
             UPDATE productos
             SET stock = stock - ?
             WHERE id = ?
-        """, (item["cantidad"], item["id"]))
+        """, (cantidad, item["id"]))
+
+    db.execute("UPDATE ventas SET total=? WHERE id=?", (total, venta_id))
 
     db.commit()
     db.close()
