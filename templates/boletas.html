@@ -2,35 +2,86 @@
 <html>
 <head>
     <title>Boletas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 0;
+            background: #f4f6f8;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px;
+        }
+
+        .card {
+            background: white;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        input {
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #198754;
+            color: white;
+            border: none;
+            margin-top: 5px;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin: 20px;
+        }
+    </style>
 </head>
+
 <body>
 
-<h1>🧾 Boletas</h1>
+<h1>🧾 Boletas (Fiado)</h1>
 
 {% if alertas %}
-<div style="background:red;color:white;padding:10px;">
-⚠ Clientes con muchas deudas:
-{% for a in alertas %}
-    <p>{{ a[0] }} ({{ a[1] }} boletas)</p>
-{% endfor %}
+<div class="card danger">
+    ⚠ Clientes con muchas deudas:
+    {% for a in alertas %}
+        <p>{{ a[0] }} - {{ a[1] }} boletas pendientes</p>
+    {% endfor %}
 </div>
 {% endif %}
 
 {% for b in boletas %}
-<div style="border:1px solid #ccc;margin:10px;padding:10px;">
-    <b>{{ b['nombre'] }}</b><br>
-    Total: ${{ b['total'] }}<br>
-    Pagado: ${{ b['pagado'] }}<br>
-    Estado: {{ b['estado'] }}
+<div class="card">
+
+    <b>Cliente:</b> {{ b['nombre'] }}<br>
+    <b>Total:</b> ${{ b['total'] }}<br>
+    <b>Pagado:</b> ${{ b['pagado'] }}<br>
+    <b>Estado:</b> {{ b['estado'] }}<br>
+    <b>Vence:</b> {{ b['vencimiento'] }}
 
     <form method="POST" action="/pagar_boleta/{{b['id']}}">
         <input name="pagado" placeholder="Monto a pagar">
         <button>Pagar</button>
     </form>
+
 </div>
 {% endfor %}
 
-<a href="/">Volver</a>
+<a href="/">⬅ Volver</a>
 
 </body>
 </html>
