@@ -58,17 +58,16 @@
         <form method="POST" action="/agregar_compra">
 
             <input name="producto" placeholder="Producto (ej: Alfajores)">
-            <input name="proveedor" placeholder="Proveedor">
-            <input name="lugar" placeholder="Lugar (Carrefour, mayorista...)">
-            <input name="cantidad" placeholder="Cantidad">
-            <input name="precio" placeholder="Precio unitario">
+            <input name="lugar" placeholder="Lugar de compra (ej: Carrefour)">
+            <input name="cantidad" placeholder="Cantidad comprada">
+            <input name="total" placeholder="Total pagado ($)">
 
             <button>➕ Registrar compra</button>
 
         </form>
 
         <p style="margin-top:10px;">
-            📌 Esta compra suma automáticamente stock al producto.
+            📌 El sistema calcula automáticamente el precio unitario y suma stock.
         </p>
     </div>
 
