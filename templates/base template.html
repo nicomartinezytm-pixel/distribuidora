@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Distribuidora</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body { margin:0; font-family: Arial; padding-bottom:70px; }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 65px;
+      background: #111;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .bottom-nav a {
+      color: white;
+      text-decoration: none;
+      text-align: center;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  {% block content %}{% endblock %}
+
+  <div class="bottom-nav">
+    <a href="/">🏠<br>Inicio</a>
+    <a href="/dashboard">📊<br>Dashboard</a>
+    <a href="/vender">💰<br>Vender</a>
+  </div>
+
+</body>
+</html>
