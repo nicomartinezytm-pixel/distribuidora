@@ -22,9 +22,7 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT,
         precio REAL,
-        stock INTEGER,
-        tipo TEXT DEFAULT 'unidad',
-        oferta TEXT DEFAULT ''
+        stock INTEGER
     )
     """)
 
@@ -73,10 +71,8 @@ def agregar_producto():
     precio = float(request.form["precio"])
     stock = int(request.form["stock"])
 
-    db.execute("""
-        INSERT INTO productos (nombre, precio, stock)
-        VALUES (?, ?, ?)
-    """, (nombre, precio, stock))
+    db.execute("INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)",
+               (nombre, precio, stock))
 
     db.commit()
     db.close()
@@ -92,13 +88,19 @@ def eliminar_producto(id):
     return redirect("/")
 
 
-# ---------------- VENTAS ----------------
-@app.route("/vender")
-def vender():
+# ---------------- JSON PRODUCTOS ----------------
+@app.route("/productos_json")
+def productos_json():
     db = get_db()
     productos = db.execute("SELECT * FROM productos").fetchall()
     db.close()
-    return render_template("ventas.html", productos=productos)
+    return jsonify([dict(p) for p in productos])
+
+
+# ---------------- VENTAS ----------------
+@app.route("/vender")
+def vender():
+    return render_template("ventas.html")
 
 
 @app.route("/finalizar_venta", methods=["POST"])
@@ -118,16 +120,11 @@ def finalizar_venta():
             subtotal = prod["precio"] * item["cantidad"]
             total += subtotal
 
-            db.execute("""
-                UPDATE productos
-                SET stock = stock - ?
-                WHERE id=?
-            """, (item["cantidad"], item["id"]))
+            db.execute("UPDATE productos SET stock = stock - ? WHERE id=?",
+                       (item["cantidad"], item["id"]))
 
-    db.execute("""
-        INSERT INTO ventas (cliente, direccion, total)
-        VALUES (?, ?, ?)
-    """, (cliente["nombre"], cliente["direccion"], total))
+    db.execute("INSERT INTO ventas (cliente, direccion, total) VALUES (?, ?, ?)",
+               (cliente["nombre"], cliente["direccion"], total))
 
     db.commit()
     db.close()
@@ -145,10 +142,8 @@ def agregar_compra():
     cantidad = int(request.form["cantidad"])
     total = float(request.form["total"])
 
-    db.execute("""
-        INSERT INTO compras (lugar, producto, cantidad, total)
-        VALUES (?, ?, ?, ?)
-    """, (lugar, producto, cantidad, total))
+    db.execute("INSERT INTO compras (lugar, producto, cantidad, total) VALUES (?, ?, ?, ?)",
+               (lugar, producto, cantidad, total))
 
     db.commit()
     db.close()
@@ -181,12 +176,10 @@ def dashboard():
 
     db.close()
 
-    return render_template(
-        "dashboard.html",
-        ventas=ventas,
-        compras=compras,
-        ganancia=ganancia
-    )
+    return render_template("dashboard.html",
+                           ventas=ventas,
+                           compras=compras,
+                           ganancia=ganancia)
 
 
 # ---------------- GANANCIAS ----------------
@@ -199,7 +192,9 @@ def ganancias():
 
     db.close()
 
-    return render_template("ganancias.html", ventas=ventas, compras=compras)
+    return render_template("ganancias.html",
+                           ventas=ventas,
+                           compras=compras)
 
 
 # ---------------- RUN ----------------
