@@ -1,147 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dashboard</title>
+    <title>Dashboard PRO</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="stylesheet" href="/static/style.css">
-
-    <!-- CHART.JS (GRÁFICO) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
-            margin: 0;
             font-family: Arial;
-            background: #f2f2f2;
-            padding-bottom: 80px;
+            margin: 0;
+            background: #f4f6f8;
         }
 
         h1 {
             text-align: center;
-            margin-top: 20px;
+            margin: 20px;
         }
 
-        .container {
-            padding: 15px;
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 10px;
         }
 
         .card {
             background: white;
             padding: 15px;
-            margin: 10px 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .big {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .blue { color: #0d6efd; }
+        .red { color: #dc3545; }
+        .green { color: #198754; }
+
+        .alert {
+            background: #fff3cd;
+            padding: 10px;
+            margin: 10px;
             border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
 
-        /* BOTÓN VOLVER */
-        .back-btn {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            background: #111;
-            color: white;
-            padding: 10px 12px;
-            border-radius: 50%;
+        a {
             text-decoration: none;
-            z-index: 9999;
+            color: black;
         }
 
-        /* BARRA INFERIOR */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 65px;
-            background: #111;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-        }
-
-        .nav-item {
-            color: white;
-            text-decoration: none;
-            text-align: center;
-            font-size: 12px;
-            flex: 1;
-        }
-
-        .nav-item span {
-            display: block;
-            font-size: 11px;
-        }
     </style>
 </head>
 
 <body>
 
-<!-- VOLVER -->
-<a href="/" class="back-btn">←</a>
+<h1>📊 Dashboard PRO</h1>
 
-<h1>📊 Dashboard</h1>
-
-<div class="container">
+<div class="grid">
 
     <div class="card">
-        <h2>Total ventas</h2>
-        <p>${{ total }}</p>
+        <div>Total ventas</div>
+        <div class="big green">$ {{ total }}</div>
     </div>
 
     <div class="card">
-        <h2>Cantidad de ventas</h2>
-        <p>{{ ventas }}</p>
+        <div>Cantidad ventas</div>
+        <div class="big blue">{{ ventas }}</div>
     </div>
 
     <div class="card">
-        <h2>Ranking clientes</h2>
-
-        {% for r in ranking %}
-            <p>👤 {{ r[0] }} - ${{ r[1] }}</p>
-        {% endfor %}
+        <div>Boletas pendientes</div>
+        <div class="big red">{{ boletas_pendientes }}</div>
     </div>
 
     <div class="card">
-        <h2>Gráfico de ventas</h2>
-        <canvas id="grafico"></canvas>
+        <div>Deuda total</div>
+        <div class="big red">$ {{ deuda_total }}</div>
     </div>
 
 </div>
 
-<!-- GRÁFICO -->
-<script>
-const ctx = document.getElementById('grafico');
-
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: {{ nombres|tojson }},
-        datasets: [{
-            label: 'Ventas por cliente',
-            data: {{ totales|tojson }},
-            backgroundColor: '#111'
-        }]
-    }
-});
-</script>
-
-<!-- BARRA INFERIOR -->
-<div class="bottom-nav">
-
-    <a href="/" class="nav-item">
-        🏠<span>Inicio</span>
-    </a>
-
-    <a href="/vender" class="nav-item">
-        💰<span>Vender</span>
-    </a>
-
-    <a href="/dashboard" class="nav-item">
-        📊<span>Stats</span>
-    </a>
-
-</div>
+<a href="/" style="display:block;text-align:center;margin:20px;">
+    ⬅ Volver
+</a>
 
 </body>
 </html>
