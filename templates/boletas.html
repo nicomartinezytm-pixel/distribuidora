@@ -9,7 +9,6 @@
         <span class="badge {{ v.estado }}">{{ v.estado.upper() }}</span>
     </div>
     
-    <p style="color: #94a3b8; font-size: 14px; margin: 5px 0;">📍 {{ v.direccion }}</p>
     <p style="color: #94a3b8; font-size: 14px; margin: 5px 0;">📱 {{ v.whatsapp }}</p>
     
     <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin: 10px 0;">
@@ -29,7 +28,7 @@
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1; padding: 12px; font-weight: bold;">💰 Pagar</button>
         
-        <!-- BOTÓN CON LINK PURO (LA FORMA MÁS COMPATIBLE EXISTENTE) -->
+        <!-- PROTOCOLO DIRECTO DE APLICACIÓN -->
         {% set num_limpio = v.whatsapp|string|replace(' ', '')|replace('-', '')|replace('+', '') %}
         {% if num_limpio|length == 10 %}
             {% set num_final = "549" ~ num_limpio %}
@@ -37,8 +36,7 @@
             {% set num_final = num_limpio %}
         {% endif %}
 
-        <a href="https://wa.me/{{ num_final }}?text=Hola%20{{ v.cliente|urlencode }}%2C%20tenes%20un%20saldo%20de%20%24{{ v.saldo }}" 
-           class="btn-whatsapp"
+        <a href="whatsapp://send?phone={{ num_final }}&text=Hola%20{{ v.cliente|urlencode }}%21%20Ten%C3%A9s%20un%20saldo%20pendiente%20de%20%24{{ v.saldo }}" 
            style="flex:1; background:#22c55e; text-decoration:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; text-align:center; display:flex; align-items:center; justify-content:center;">
             📲 WhatsApp
         </a>
@@ -54,22 +52,11 @@
             <p>Cliente: <b>{{ v.cliente }}</b></p>
             <input type="number" step="0.01" name="monto" placeholder="¿Cuánto entregó?" required 
                    style="width:100%; padding: 12px; margin-bottom:15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white;">
-            <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar</button>
+            <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar Pago</button>
             <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" 
                     style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar</button>
         </form>
     </div>
 </div>
 {% endfor %}
-
-<script>
-    // Pequeño parche: Si el link falla al hacer clic (por el error de scheme), 
-    // forzamos al navegador a salir de la app actual.
-    document.querySelectorAll('.btn-whatsapp').forEach(link => {
-        link.addEventListener('click', function(e) {
-            // No hacemos preventDefault para que el link intente abrirse normalmente primero
-            console.log("Intentando abrir WhatsApp...");
-        });
-    });
-</script>
 {% endblock %}
