@@ -91,7 +91,6 @@ def agregar_compra():
         prod_nombre = request.form['producto'].strip()
         cant, costo = int(request.form['cantidad']), float(request.form['total'])
         lugar = request.form.get('lugar', 'Proveedor')
-        # Si el producto no existe, lo crea
         existe = db.execute("SELECT id FROM productos WHERE nombre = ?", (prod_nombre,)).fetchone()
         if not existe:
             db.execute("INSERT INTO productos (nombre, precio, stock) VALUES (?, 0, 0)", (prod_nombre,))
@@ -125,10 +124,17 @@ def registrar_pago():
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
-    v = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
-    c = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
+    # Solo tomamos lo que ya se PAGÓ (Ganancia Real) y el Total Vendido (Ganancia Proyectada)
+    total_vendido = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
+    total_cobrado = db.execute("SELECT SUM(pagado) FROM ventas").fetchone()[0] or 0
+    total_compras = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
     db.close()
-    return render_template("dashboard.html", total_ventas=v, total_compras=c, ganancia=v-c)
+    
+    return render_template("dashboard.html", 
+                           total_v=total_vendido, 
+                           total_cobrado=total_cobrado,
+                           total_c=total_compras, 
+                           balance=total_vendido - total_compras)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000, debug=True)
