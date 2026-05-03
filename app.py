@@ -7,13 +7,14 @@ app = Flask(__name__)
 
 # -------- DB --------
 def get_db():
-    path = os.path.join(os.getcwd(), "db.db")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(base_dir, "db.db")
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# -------- INIT DB (CORREGIDO PARA RENDER) --------
+# -------- INIT DB --------
 def init_db():
     db = get_db()
 
@@ -57,7 +58,7 @@ def init_db():
     db.close()
 
 
-# 🔥 SE EJECUTA AL ARRANCAR FLASK (IMPORTANTE)
+# ejecutar al iniciar app
 with app.app_context():
     init_db()
 
@@ -76,10 +77,15 @@ def index():
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
-    db.execute(
-        "INSERT INTO productos (nombre, precio, stock, tipo_precio) VALUES (?, ?, ?, ?)",
-        (request.form["nombre"], request.form["precio"], request.form["stock"], request.form["tipo_precio"])
-    )
+    db.execute("""
+        INSERT INTO productos (nombre, precio, stock, tipo_precio)
+        VALUES (?, ?, ?, ?)
+    """, (
+        request.form["nombre"],
+        request.form["precio"],
+        request.form["stock"],
+        request.form["tipo_precio"]
+    ))
     db.commit()
     db.close()
     return redirect("/")
@@ -117,10 +123,14 @@ def editar_producto(id):
 @app.route("/agregar_cliente", methods=["POST"])
 def agregar_cliente():
     db = get_db()
-    db.execute(
-        "INSERT INTO clientes (nombre, telefono, direccion) VALUES (?, ?, ?)",
-        (request.form["nombre"], request.form["telefono"], request.form["direccion"])
-    )
+    db.execute("""
+        INSERT INTO clientes (nombre, telefono, direccion)
+        VALUES (?, ?, ?)
+    """, (
+        request.form["nombre"],
+        request.form["telefono"],
+        request.form["direccion"]
+    ))
     db.commit()
     db.close()
     return redirect("/")
@@ -140,18 +150,33 @@ def vender():
 def finalizar_venta():
     db = get_db()
 
-    cliente_id = request.form["cliente"]
+    # 🔥 cliente escrito manualmente
+    nombre = request.form["cliente_nombre"]
+    telefono = request.form["cliente_telefono"]
+    direccion = request.form["cliente_direccion"]
+
     total = float(request.form["total"])
     carrito = json.loads(request.form["carrito"])
 
     cursor = db.cursor()
 
-    cursor.execute(
-        "INSERT INTO ventas (cliente_id, total) VALUES (?, ?)",
-        (cliente_id, total)
-    )
+    # crear cliente nuevo
+    cursor.execute("""
+        INSERT INTO clientes (nombre, telefono, direccion)
+        VALUES (?, ?, ?)
+    """, (nombre, telefono, direccion))
+
+    cliente_id = cursor.lastrowid
+
+    # crear venta
+    cursor.execute("""
+        INSERT INTO ventas (cliente_id, total)
+        VALUES (?, ?)
+    """, (cliente_id, total))
+
     venta_id = cursor.lastrowid
 
+    # detalle venta + stock
     for item in carrito:
         db.execute("""
             INSERT INTO detalle_venta (venta_id, producto_id, cantidad)
@@ -166,6 +191,7 @@ def finalizar_venta():
 
     db.commit()
     db.close()
+
     return redirect("/")
 
 
