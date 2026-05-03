@@ -3,55 +3,60 @@
 
 <div class="container">
 
-    <h1>📦 Distribuidora Pro</h1>
+<h1>📦 Distribuidora Pro</h1>
 
-    <!-- ================= PRODUCTO ================= -->
-    <div class="card">
-        <h3>➕ Agregar Producto</h3>
+<!-- ================= PRODUCTO ================= -->
+<div class="card">
+<h3>➕ Nuevo Producto</h3>
 
-        <form method="POST" action="/agregar_producto">
-            <input name="nombre" placeholder="Nombre" required>
-            <input name="precio" placeholder="Precio" required>
-            <input name="stock" placeholder="Stock" required>
-            <button type="submit">Guardar</button>
-        </form>
-    </div>
+<form method="POST" action="/agregar_producto">
+<input name="nombre" placeholder="Nombre del producto">
+<input name="precio" placeholder="Precio">
+<input name="stock" placeholder="Stock inicial">
+<button type="submit">Guardar producto</button>
+</form>
 
-    <!-- ================= LISTA ================= -->
-    <div class="card">
-        <h3>📦 Productos</h3>
+</div>
 
-        {% for p in productos %}
-        <div class="card">
-            <b>{{p['nombre']}}</b><br>
-            💰 ${{p['precio']}}<br>
-            📦 Stock: {{p['stock']}}<br>
+<!-- ================= LISTA PRODUCTOS ================= -->
+<div class="card">
+<h3>📦 Productos</h3>
 
-            <a href="/eliminar_producto/{{p['id']}}">
-                <button>❌ Eliminar</button>
-            </a>
-        </div>
-        {% endfor %}
-    </div>
+{% for p in productos %}
+<div class="card">
+<b>{{p['nombre']}}</b><br>
+💰 Precio: ${{p['precio']}}<br>
+📦 Stock: {{p['stock']}}<br>
 
-    <!-- ================= COMPRAS ================= -->
-    <div class="card">
-        <h3>🛒 Compras Mayoristas</h3>
+<a href="/eliminar_producto/{{p['id']}}">
+<button class="red">Eliminar</button>
+</a>
+</div>
+{% endfor %}
 
-        <form method="POST" action="/agregar_compra">
+</div>
 
-            <input name="lugar" placeholder="Lugar (Carrefour, mayorista...)" required>
-            <input name="producto" placeholder="Producto" required>
-            <input name="cantidad" type="number" placeholder="Cantidad" required>
-            <input name="total" type="number" step="0.01" placeholder="Total pagado" required>
+<!-- ================= COMPRAS ================= -->
+<div class="card">
+<h3>🛒 Compras Mayoristas</h3>
 
-            <button type="submit">Registrar compra</button>
-        </form>
+<form method="POST" action="/agregar_compra">
 
-        <p style="font-size:13px;">
-            📌 Esta compra se guarda y sirve para el control de gastos.
-        </p>
-    </div>
+<input name="lugar" placeholder="Lugar (Carrefour, mayorista...)">
+<input name="producto" placeholder="Producto comprado">
+<input name="cantidad" placeholder="Cantidad">
+
+<input name="total" placeholder="Total pagado">
+
+<button type="submit">Registrar compra</button>
+
+</form>
+
+<p style="font-size:12px;color:gray;margin-top:8px;">
+✔ Esto suma stock automáticamente si el producto existe
+</p>
+
+</div>
 
 </div>
 
