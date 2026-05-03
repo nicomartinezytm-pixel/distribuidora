@@ -11,12 +11,12 @@
             margin: 0;
             font-family: Arial;
             background: #f2f2f2;
-            padding-bottom: 80px;
+            padding-bottom: 90px;
         }
 
         h1 {
             text-align: center;
-            margin-top: 20px;
+            margin: 15px 0;
         }
 
         .container {
@@ -26,12 +26,12 @@
         .card {
             background: white;
             padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
+            margin-bottom: 10px;
+            border-radius: 12px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
 
-        input, select {
+        input {
             width: 100%;
             padding: 10px;
             margin: 5px 0;
@@ -44,101 +44,188 @@
             color: white;
             border: none;
             margin-top: 10px;
+            border-radius: 8px;
         }
 
-        /* BOTÓN VOLVER */
+        .producto {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            padding: 8px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .producto button {
+            width: auto;
+            padding: 6px 10px;
+        }
+
+        .carrito-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+
+        .total {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
         .back-btn {
             position: fixed;
             top: 15px;
             left: 15px;
             background: #111;
             color: white;
-            padding: 10px 12px;
+            padding: 10px;
             border-radius: 50%;
             text-decoration: none;
-            z-index: 9999;
         }
 
-        /* BARRA INFERIOR */
-        .bottom-nav {
+        .bottom {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 65px;
             background: #111;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-        }
-
-        .nav-item {
             color: white;
-            text-decoration: none;
-            text-align: center;
-            font-size: 12px;
-            flex: 1;
-        }
-
-        .nav-item span {
-            display: block;
-            font-size: 11px;
+            padding: 10px;
         }
     </style>
 </head>
 
 <body>
 
-<!-- VOLVER -->
 <a href="/" class="back-btn">←</a>
 
-<h1>💰 Ventas</h1>
+<h1>🛒 Ventas PRO</h1>
 
 <div class="container">
 
-    <div class="card">
-        <h2>Nueva venta</h2>
+<!-- CLIENTE -->
+<div class="card">
+    <h3>Cliente</h3>
+    <input id="nombre" placeholder="Nombre">
+    <input id="telefono" placeholder="Teléfono">
+    <input id="direccion" placeholder="Dirección">
+</div>
 
-        <form method="POST" action="/finalizar_venta">
+<!-- PRODUCTOS -->
+<div class="card">
+    <h3>Productos</h3>
+    <div id="productos"></div>
+</div>
 
-            <!-- 🔥 CLIENTE ESCRIBIBLE -->
-            <label>Cliente:</label>
-            <input name="cliente_nombre" placeholder="Escribí el nombre del cliente" required>
+<!-- CARRITO -->
+<div class="card">
+    <h3>Carrito</h3>
+    <div id="carrito"></div>
 
-            <label>Teléfono (opcional):</label>
-            <input name="cliente_telefono" placeholder="Ej: 3541...">
-
-            <label>Dirección (opcional):</label>
-            <input name="cliente_direccion" placeholder="Dirección">
-
-            <label>Total:</label>
-            <input name="total" type="number" step="0.01" required>
-
-            <!-- carrito oculto -->
-            <input type="hidden" name="carrito" value="[]">
-
-            <button type="submit">Finalizar venta</button>
-        </form>
+    <div class="total">
+        Total: $<span id="total">0</span>
     </div>
 
-    <div class="card">
-        <h2>Productos disponibles</h2>
-
-        {% for p in productos %}
-            <p>📦 {{ p[1] }} - ${{ p[2] }} (Stock: {{ p[3] }})</p>
-        {% endfor %}
-    </div>
+    <button onclick="finalizar()">FINALIZAR VENTA</button>
+</div>
 
 </div>
 
-<!-- BARRA INFERIOR -->
-<div class="bottom-nav">
-
-    <a href="/" class="nav-item">🏠<span>Inicio</span></a>
-    <a href="/vender" class="nav-item">💰<span>Vender</span></a>
-    <a href="/dashboard" class="nav-item">📊<span>Stats</span></a>
-
+<div class="bottom">
+    💡 Sistema POS activo
 </div>
+
+<script>
+
+let carrito = [];
+
+// cargar productos
+fetch("/productos_json")
+.then(r => r.json())
+.then(data => {
+    let cont = document.getElementById("productos");
+
+    data.forEach(p => {
+        cont.innerHTML += `
+        <div class="producto">
+            <div>
+                <b>${p.nombre}</b><br>
+                $${p.precio}
+            </div>
+            <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio})">+</button>
+        </div>
+        `;
+    });
+});
+
+function agregar(id, nombre, precio) {
+
+    let item = carrito.find(p => p.id === id);
+
+    if (item) {
+        item.cantidad++;
+    } else {
+        carrito.push({id, nombre, precio, cantidad: 1});
+    }
+
+    render();
+}
+
+function render() {
+    let cont = document.getElementById("carrito");
+    cont.innerHTML = "";
+
+    let total = 0;
+
+    carrito.forEach((p, i) => {
+
+        let subtotal = p.precio * p.cantidad;
+        total += subtotal;
+
+        cont.innerHTML += `
+        <div class="carrito-item">
+            ${p.nombre} x${p.cantidad} - $${subtotal}
+            <button onclick="quitar(${i})">❌</button>
+        </div>
+        `;
+    });
+
+    document.getElementById("total").innerText = total;
+}
+
+function quitar(i) {
+    carrito.splice(i, 1);
+    render();
+}
+
+function finalizar() {
+
+    let data = {
+        cliente: {
+            nombre: document.getElementById("nombre").value,
+            telefono: document.getElementById("telefono").value,
+            direccion: document.getElementById("direccion").value
+        },
+        carrito: carrito
+    };
+
+    fetch("/finalizar_venta", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "data=" + encodeURIComponent(JSON.stringify(data))
+    })
+    .then(r => r.json())
+    .then(res => {
+        alert("Venta realizada ✔");
+        location.reload();
+    });
+}
+
+</script>
 
 </body>
 </html>
