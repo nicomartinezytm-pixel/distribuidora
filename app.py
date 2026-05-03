@@ -24,8 +24,8 @@ def init_db():
         cantidad INTEGER, total REAL, fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )""")
     db.execute("""CREATE TABLE IF NOT EXISTS ventas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, direccion TEXT, 
-        detalle TEXT, total REAL, pagado REAL DEFAULT 0, saldo REAL DEFAULT 0, 
+        id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, detalle TEXT, 
+        total REAL, pagado REAL DEFAULT 0, saldo REAL DEFAULT 0, 
         estado TEXT DEFAULT 'fiado', fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )""")
     db.commit()
@@ -60,12 +60,10 @@ def compras():
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
-    lugar = request.form['lugar']
     prod = request.form['producto']
     cant = int(request.form['cantidad'])
-    total = float(request.form['total'])
-    db.execute("INSERT INTO compras (lugar, producto, cantidad, total) VALUES (?,?,?,?)", (lugar, prod, cant, total))
-    # Actualizar stock
+    db.execute("INSERT INTO compras (lugar, producto, cantidad, total) VALUES (?,?,?,?)", 
+               (request.form['lugar'], prod, cant, float(request.form['total'])))
     db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cant, prod))
     db.commit()
     db.close()
@@ -88,11 +86,9 @@ def finalizar_venta():
     data = request.json
     cliente = data["cliente"]
     carrito = data["carrito"]
-    total = 0
+    total = sum(float(i['precio']) * int(i['cantidad']) for i in carrito)
     for item in carrito:
-        total += float(item['precio']) * int(item['cantidad'])
         db.execute("UPDATE productos SET stock = stock - ? WHERE id = ?", (item['cantidad'], item['id']))
-    
     db.execute("INSERT INTO ventas (cliente, detalle, total, saldo) VALUES (?,?,?,?)",
                (cliente['nombre'], json.dumps(carrito), total, total))
     db.commit()
@@ -107,4 +103,5 @@ def boletas():
     return render_template("boletas.html", boletas=res)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    # Cambié debug a False para evitar reinicios dobles en algunos celulares
+    app.run(host="0.0.0.0", port=10000, debug=False)
