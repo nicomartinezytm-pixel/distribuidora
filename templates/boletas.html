@@ -1,69 +1,90 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Cobranzas</h2>
+<h2 style="margin-bottom: 20px;">📋 Cobranzas y Deudas</h2>
+
 {% for v in boletas %}
-<div class="card">
+<div class="card" style="border-left: 5px solid {% if v.estado == 'pagado' %}#22c55e{% else %}#ef4444{% endif %};">
     <div style="display:flex; justify-content:space-between; align-items: center;">
         <b style="font-size: 18px;">{{ v.cliente }}</b>
         <span class="badge {{ v.estado }}">{{ v.estado.upper() }}</span>
     </div>
-    <p style="color: #94a3b8; font-size: 14px;">{{ v.direccion }}</p>
+    
+    <p style="color: #94a3b8; font-size: 14px; margin: 5px 0;">📍 {{ v.direccion }}</p>
+    <p style="color: #94a3b8; font-size: 14px; margin: 5px 0;">📱 {{ v.whatsapp }}</p>
     
     <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin: 10px 0;">
         {% for item in v.detalle|fromjson %}
-        <div style="display:flex; justify-content:space-between; font-size: 13px;">
-            <span>{{ item.nombre }} x{{ item.cantidad }}</span>
+        <div style="display:flex; justify-content:space-between; font-size: 13px; margin-bottom: 3px;">
+            <span>{{ item.nombre }} (x{{ item.cantidad }})</span>
             <span>${{ item.precio * item.cantidad }}</span>
         </div>
         {% endfor %}
     </div>
 
-    <div style="display:flex; justify-content:space-between; border-top: 1px solid #334155; pt: 10px;">
-        <span>Total: ${{ v.total }}</span>
-        <b style="color:#ef4444;">Debe: ${{ v.saldo }}</b>
+    <div style="display:flex; justify-content:space-between; border-top: 1px solid #334155; padding-top: 10px; margin-top: 5px;">
+        <span>Total: <b>${{ v.total }}</b></span>
+        <span style="color:#ef4444;">Debe: <b>${{ v.saldo }}</b></span>
     </div>
     
     <div style="display:flex; gap:10px; margin-top:15px;">
-        <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1;">Pagar</button>
-        <button onclick="enviarWA('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" style="flex:1; background:#22c55e; border:none; color:white;">WhatsApp</button>
+        <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1; padding: 12px; font-weight: bold;">💰 Pagar</button>
+        <!-- BOTÓN DE WHATSAPP -->
+        <button onclick="enviarWhatsApp('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" 
+                style="flex:1; background:#22c55e; border:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+            📲 WhatsApp
+        </button>
     </div>
 </div>
 
-<!-- Modal Pago -->
+<!-- Modal para registrar pago -->
 <div id="m-{{v.id}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
-    <div class="card" style="margin:20% auto; width: 80%; background:#1e293b;">
-        <h3>Registrar Pago</h3>
+    <div class="card" style="margin:20% auto; width: 85%; background:#1e293b; padding: 25px;">
+        <h3>Registrar entrega de dinero</h3>
         <form action="/registrar_pago" method="POST">
             <input type="hidden" name="id" value="{{ v.id }}">
-            <input type="number" step="0.01" name="monto" placeholder="Monto a cobrar" required style="width:100%; margin-bottom:10px;">
-            <button type="submit" style="width:100%; background:#3b82f6;">Confirmar Pago</button>
-            <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" style="width:100%; background:transparent; border:none; color:white; margin-top:10px;">Cancelar</button>
+            <p>Cliente: <b>{{ v.cliente }}</b></p>
+            <input type="number" step="0.01" name="monto" placeholder="¿Cuánto pagó?" required 
+                   style="width:100%; padding: 12px; margin-bottom:15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white;">
+            <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar Pago</button>
+            <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" 
+                    style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar sin guardar</button>
         </form>
     </div>
 </div>
 {% endfor %}
 
 <script>
-function enviarWA(tel, cli, saldo) {
-    // 1. Limpiar el número de espacios, guiones y paréntesis
-    let num = tel.replace(/\D/g, ''); 
+function enviarWhatsApp(telefono, nombre, saldo) {
+    // 1. Quitamos TODO lo que no sea número (espacios, guiones, paréntesis, el +)
+    let limpio = telefono.replace(/\D/g, '');
     
-    // 2. Si el número empieza con '3' (muy común en Arg) y no tiene el '549', se lo agregamos
-    if (num.startsWith('3') && num.length <= 10) {
-        num = '549' + num;
+    // 2. Lógica para Argentina (si el número tiene 10 dígitos y empieza con 3, por ej: 351...)
+    if (limpio.length === 10) {
+        // Le agregamos el 54 (Argentina) y el 9 (necesario para celular)
+        limpio = "549" + limpio;
     } 
-    // 3. Si no tiene código de país en general, le ponemos el 54 por defecto
-    else if (!num.startsWith('54') && num.length > 0) {
-        num = '54' + num;
+    // Si tiene 11 dígitos y empieza con 15 (ej: 35115...)
+    else if (limpio.length === 12 && limpio.startsWith('54')) {
+        // Ya tiene el código de país, pero a veces falta el '9'
+        if (!limpio.startsWith('549')) {
+             limpio = '549' + limpio.substring(2);
+        }
+    }
+    // Si no tiene nada de eso y es un número corto, le mandamos el 549 por las dudas
+    else if (limpio.length > 0 && !limpio.startsWith('54')) {
+        limpio = "549" + limpio;
     }
 
-    if(num.length < 10) {
-        return alert("El número de teléfono parece estar incompleto.");
+    if (limpio.length < 10) {
+        alert("El número '" + telefono + "' no parece ser válido. Editá el cliente con un número real.");
+        return;
     }
 
-    let msj = encodeURIComponent(`Hola ${cli}, te escribo para recordarte tu saldo pendiente de $${saldo}.`);
-    // Usamos api.whatsapp.com que es más compatible en algunos navegadores
-    window.open(`https://api.whatsapp.com/send?phone=${num}&text=${msj}`, '_blank');
+    let texto = `Hola ${nombre}! 👋 Te escribo de la tienda para recordarte que tenés un saldo pendiente de $${saldo}. Avisame cuando puedas pasar, gracias!`;
+    let url = "https://wa.me/" + limpio + "?text=" + encodeURIComponent(texto);
+    
+    // Abrir en ventana nueva
+    window.open(url, '_blank');
 }
 </script>
 {% endblock %}
