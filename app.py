@@ -1,20 +1,18 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, jsonify
 import sqlite3
 import json
 import os
 
 app = Flask(__name__)
 
-# -------- DB --------
+# ---------------- DB ----------------
 def get_db():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(base_dir, "db.db")
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(os.path.join(base_dir, "db.db"))
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# -------- INIT DB (CREA TODO SOLO) --------
 def init_db():
     db = get_db()
 
@@ -59,29 +57,27 @@ def init_db():
     db.close()
 
 
-# ejecutar al iniciar servidor
 with app.app_context():
     init_db()
 
 
-# -------- HOME --------
+# ---------------- HOME ----------------
 @app.route("/")
 def index():
     db = get_db()
     productos = db.execute("SELECT * FROM productos").fetchall()
-    clientes = db.execute("SELECT * FROM clientes").fetchall()
     db.close()
-    return render_template("index.html", productos=productos, clientes=clientes)
+    return render_template("index.html", productos=productos)
 
 
-# -------- PRODUCTOS --------
+# ---------------- PRODUCTOS ----------------
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
 
     tipo = request.form["tipo_precio"]
-
     extra = 1
+
     if tipo == "cantidad":
         extra = int(request.form.get("cantidad_extra") or 1)
     elif tipo == "oferta":
@@ -103,78 +99,35 @@ def agregar_producto():
     return redirect("/")
 
 
-@app.route("/eliminar_producto/<int:id>")
-def eliminar_producto(id):
-    db = get_db()
-    db.execute("DELETE FROM productos WHERE id=?", (id,))
-    db.commit()
-    db.close()
-    return redirect("/")
-
-
-@app.route("/editar_producto/<int:id>", methods=["POST"])
-def editar_producto(id):
-    db = get_db()
-
-    db.execute("""
-        UPDATE productos
-        SET nombre=?, precio=?, stock=?, tipo_precio=?
-        WHERE id=?
-    """, (
-        request.form["nombre"],
-        request.form["precio"],
-        request.form["stock"],
-        request.form["tipo_precio"],
-        id
-    ))
-
-    db.commit()
-    db.close()
-    return redirect("/")
-
-
-# -------- CLIENTES --------
-@app.route("/agregar_cliente", methods=["POST"])
-def agregar_cliente():
-    db = get_db()
-
-    db.execute("""
-        INSERT INTO clientes (nombre, telefono, direccion)
-        VALUES (?, ?, ?)
-    """, (
-        request.form["nombre"],
-        request.form["telefono"],
-        request.form["direccion"]
-    ))
-
-    db.commit()
-    db.close()
-    return redirect("/")
-
-
-# -------- VENTAS --------
-@app.route("/vender")
-def vender():
+@app.route("/productos_json")
+def productos_json():
     db = get_db()
     productos = db.execute("SELECT * FROM productos").fetchall()
-    clientes = db.execute("SELECT * FROM clientes").fetchall()
     db.close()
-    return render_template("ventas.html", productos=productos, clientes=clientes)
+
+    return jsonify([dict(p) for p in productos])
+
+
+# ---------------- VENTAS ----------------
+@app.route("/vender")
+def vender():
+    return render_template("ventas.html")
 
 
 @app.route("/finalizar_venta", methods=["POST"])
 def finalizar_venta():
     db = get_db()
 
-    nombre = request.form["cliente_nombre"]
-    telefono = request.form["cliente_telefono"]
-    direccion = request.form["cliente_direccion"]
+    data = json.loads(request.form["data"])
 
-    carrito = json.loads(request.form["carrito"])
+    nombre = data["cliente"]["nombre"]
+    telefono = data["cliente"]["telefono"]
+    direccion = data["cliente"]["direccion"]
+
+    carrito = data["carrito"]
 
     cursor = db.cursor()
 
-    # crear cliente
     cursor.execute("""
         INSERT INTO clientes (nombre, telefono, direccion)
         VALUES (?, ?, ?)
@@ -182,7 +135,6 @@ def finalizar_venta():
 
     cliente_id = cursor.lastrowid
 
-    # crear venta
     cursor.execute("""
         INSERT INTO ventas (cliente_id, total)
         VALUES (?, ?)
@@ -204,7 +156,6 @@ def finalizar_venta():
 
         cantidad = item["cantidad"]
 
-        # 🔥 LÓGICA DE PRECIOS
         if tipo == "unidad":
             subtotal = precio * cantidad
 
@@ -235,10 +186,10 @@ def finalizar_venta():
     db.commit()
     db.close()
 
-    return redirect("/")
+    return jsonify({"ok": True})
 
 
-# -------- DASHBOARD --------
+# ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
@@ -259,16 +210,12 @@ def dashboard():
 
     db.close()
 
-    return render_template(
-        "dashboard.html",
-        total=total,
-        ventas=ventas,
-        ranking=ranking,
-        nombres=nombres,
-        totales=totales
-    )
+    return render_template("dashboard.html",
+                           total=total,
+                           ventas=ventas,
+                           nombres=nombres,
+                           totales=totales)
 
 
-# -------- RUN --------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
