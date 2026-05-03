@@ -28,7 +28,8 @@
     
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1; padding: 12px; font-weight: bold;">💰 Pagar</button>
-        <!-- BOTÓN DE WHATSAPP -->
+        
+        <!-- EL BOTÓN MÁGICO DE WHATSAPP -->
         <button onclick="enviarWhatsApp('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" 
                 style="flex:1; background:#22c55e; border:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;">
             📲 WhatsApp
@@ -36,7 +37,7 @@
     </div>
 </div>
 
-<!-- Modal para registrar pago -->
+<!-- Modal para registrar pago (No se toca) -->
 <div id="m-{{v.id}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
     <div class="card" style="margin:20% auto; width: 85%; background:#1e293b; padding: 25px;">
         <h3>Registrar entrega de dinero</h3>
@@ -47,7 +48,7 @@
                    style="width:100%; padding: 12px; margin-bottom:15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white;">
             <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar Pago</button>
             <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" 
-                    style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar sin guardar</button>
+                    style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar</button>
         </form>
     </div>
 </div>
@@ -55,36 +56,45 @@
 
 <script>
 function enviarWhatsApp(telefono, nombre, saldo) {
-    // 1. Quitamos TODO lo que no sea número (espacios, guiones, paréntesis, el +)
-    let limpio = telefono.replace(/\D/g, '');
+    // 1. Limpieza total: solo números
+    let num = telefono.replace(/\D/g, '');
     
-    // 2. Lógica para Argentina (si el número tiene 10 dígitos y empieza con 3, por ej: 351...)
-    if (limpio.length === 10) {
-        // Le agregamos el 54 (Argentina) y el 9 (necesario para celular)
-        limpio = "549" + limpio;
-    } 
-    // Si tiene 11 dígitos y empieza con 15 (ej: 35115...)
-    else if (limpio.length === 12 && limpio.startsWith('54')) {
-        // Ya tiene el código de país, pero a veces falta el '9'
-        if (!limpio.startsWith('549')) {
-             limpio = '549' + limpio.substring(2);
-        }
+    // 2. Si el usuario escribió el número con 15 (ej: 35115...), se lo quitamos 
+    // porque para WhatsApp internacional NO va el 15.
+    if (num.length === 12 && num.substring(2, 4) === '15') {
+        num = num.substring(0, 2) + num.substring(4);
     }
-    // Si no tiene nada de eso y es un número corto, le mandamos el 549 por las dudas
-    else if (limpio.length > 0 && !limpio.startsWith('54')) {
-        limpio = "549" + limpio;
+    if (num.length === 11 && num.startsWith('15')) {
+        num = num.substring(2);
     }
 
-    if (limpio.length < 10) {
-        alert("El número '" + telefono + "' no parece ser válido. Editá el cliente con un número real.");
+    // 3. Asegurar código de país (Argentina 54) y el '9' para móviles
+    // Si tiene 10 dígitos (ej: 3512345678)
+    if (num.length === 10) {
+        num = "549" + num;
+    } 
+    // Si tiene 11 dígitos y empieza con 9 (ej: 93512345678)
+    else if (num.length === 11 && num.startsWith('9')) {
+        num = "54" + num;
+    }
+    // Si ya tiene el 54 pero le falta el 9
+    else if (num.startsWith('54') && !num.startsWith('549')) {
+        num = "549" + num.substring(2);
+    }
+
+    if (num.length < 10) {
+        alert("El número parece corto. Asegurate de poner el código de área (ej: 351...)");
         return;
     }
 
-    let texto = `Hola ${nombre}! 👋 Te escribo de la tienda para recordarte que tenés un saldo pendiente de $${saldo}. Avisame cuando puedas pasar, gracias!`;
-    let url = "https://wa.me/" + limpio + "?text=" + encodeURIComponent(texto);
+    let msj = `Hola ${nombre}! Te escribo para recordarte el saldo pendiente de $${saldo}. Muchas gracias!`;
     
-    // Abrir en ventana nueva
-    window.open(url, '_blank');
+    // 4. EL TRUCO FINAL: Usamos un link directo que fuerza la apertura de la app
+    // Si estás en PC abre Web, si estás en celular abre la App.
+    let link = "https://wa.me/" + num + "?text=" + encodeURIComponent(msj);
+    
+    console.log("Enviando a:", num); // Para que puedas ver en la consola si hay error
+    window.open(link, '_blank').focus();
 }
 </script>
 {% endblock %}
