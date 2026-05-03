@@ -4,19 +4,19 @@ import json
 import os
 
 app = Flask(__name__)
-# Filtro para poder leer JSON desde las plantillas si fuera necesario
 app.jinja_env.filters['fromjson'] = json.loads
 
 def get_db():
-    """Conexión persistente a la base de datos"""
+    """Conexión a la base de datos local"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(os.path.join(base_dir, "db.db"))
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    """Inicializa las tablas y asegura que las columnas nuevas existan"""
+    """Crea las tablas y agrega columnas nuevas si faltan"""
     db = get_db()
+    
     # Tabla de Productos
     db.execute("""CREATE TABLE IF NOT EXISTS productos (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -27,7 +27,7 @@ def init_db():
         oferta TEXT DEFAULT ''
     )""")
     
-    # Tabla de Compras (Entradas de mercadería)
+    # Tabla de Compras
     db.execute("""CREATE TABLE IF NOT EXISTS compras (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
         lugar TEXT, 
@@ -37,10 +37,12 @@ def init_db():
         fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )""")
     
-    # Tabla de Ventas (Salidas / Boletas)
+    # Tabla de Ventas (Actualizada con Dirección y WhatsApp)
     db.execute("""CREATE TABLE IF NOT EXISTS ventas (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
         cliente TEXT, 
+        direccion TEXT,
+        whatsapp TEXT,
         detalle TEXT, 
         total REAL, 
         pagado REAL DEFAULT 0, 
@@ -49,21 +51,19 @@ def init_db():
         fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )""")
 
-    # --- MIGRACIÓN: Agregar columnas si el usuario ya tenía una db vieja ---
-    try:
-        db.execute("ALTER TABLE productos ADD COLUMN unidad TEXT DEFAULT 'Unidad'")
-    except: pass
-    try:
-        db.execute("ALTER TABLE productos ADD COLUMN oferta TEXT DEFAULT ''")
-    except: pass
-
+    # --- PARCHE DE SEGURIDAD: Agregar columnas si la DB ya existía ---
+    columnas_ventas = [c['name'] for c in db.execute("PRAGMA table_info(ventas)").fetchall()]
+    if 'direccion' not in columnas_ventas:
+        db.execute("ALTER TABLE ventas ADD COLUMN direccion TEXT")
+    if 'whatsapp' not in columnas_ventas:
+        db.execute("ALTER TABLE ventas ADD COLUMN whatsapp TEXT")
+        
     db.commit()
     db.close()
 
-# Ejecutar inicialización al empezar
 init_db()
 
-# --- RUTA: STOCK (INVENTARIO) ---
+# --- RUTAS DE STOCK ---
 @app.route("/")
 def index():
     db = get_db()
@@ -81,22 +81,21 @@ def agregar_producto():
     db.close()
     return redirect("/")
 
-# --- RUTA: DASHBOARD ---
+# --- RUTA DASHBOARD ---
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
     v = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
     c = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
-    # Alerta si hay menos de 10 unidades
     alerta = db.execute("SELECT COUNT(id) FROM productos WHERE stock < 10").fetchone()[0] or 0
     db.close()
     return render_template("dashboard.html", total_ventas=v, total_compras=c, ganancia=v-c, alertas_stock=alerta)
 
-# --- RUTA: COMPRAS (PROVEEDORES) ---
+# --- RUTAS DE COMPRAS ---
 @app.route("/compras")
 def compras():
     db = get_db()
-    historial = db.execute("SELECT * FROM compras ORDER BY id DESC").fetchall()
+    historial = db.execute("SELECT * FROM compras ORDER BY id DESC LIMIT 20").fetchall()
     prods = db.execute("SELECT nombre FROM productos ORDER BY nombre ASC").fetchall()
     db.close()
     return render_template("compras.html", historial=historial, productos=prods)
@@ -104,30 +103,22 @@ def compras():
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
-    lugar = request.form['lugar']
     prod_nombre = request.form['producto']
     cant = int(request.form['cantidad'])
-    costo_total = float(request.form['total'])
-    
-    # Registrar la compra
     db.execute("INSERT INTO compras (lugar, producto, cantidad, total) VALUES (?,?,?,?)",
-               (lugar, prod_nombre, cant, costo_total))
-    
-    # Actualizar el stock del producto existente
+               (request.form['lugar'], prod_nombre, cant, float(request.form['total'])))
     db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cant, prod_nombre))
-    
     db.commit()
     db.close()
     return redirect("/compras")
 
-# --- RUTA: VENTAS (CARRITO) ---
+# --- RUTAS DE VENTAS ---
 @app.route("/vender")
 def vender():
     return render_template("ventas.html")
 
 @app.route("/productos_json")
 def productos_json():
-    """API para que el carrito de ventas busque productos sin recargar la página"""
     db = get_db()
     res = db.execute("SELECT * FROM productos WHERE stock > 0").fetchall()
     db.close()
@@ -137,25 +128,25 @@ def productos_json():
 def finalizar_venta():
     db = get_db()
     data = request.json
-    cliente = data["cliente"]["nombre"]
+    cliente = data["cliente"]
     carrito = data["carrito"]
     
-    total_venta = 0
-    for item in carrito:
-        subtotal = float(item['precio']) * int(item['cantidad'])
-        total_venta += subtotal
-        # Descontar del stock
-        db.execute("UPDATE productos SET stock = stock - ? WHERE id = ?", (item['cantidad'], item['id']))
+    total_venta = sum(float(i['precio']) * int(i['cantidad']) for i in carrito)
     
-    # Guardar la boleta
-    db.execute("INSERT INTO ventas (cliente, detalle, total, saldo) VALUES (?,?,?,?)",
-               (cliente, json.dumps(carrito), total_venta, total_venta))
+    # Insertar con los nuevos campos
+    db.execute("""INSERT INTO ventas (cliente, direccion, whatsapp, detalle, total, saldo) 
+                  VALUES (?,?,?,?,?,?)""",
+               (cliente['nombre'], cliente.get('direccion', ''), cliente.get('whatsapp', ''), 
+                json.dumps(carrito), total_venta, total_venta))
+    
+    for item in carrito:
+        db.execute("UPDATE productos SET stock = stock - ? WHERE id = ?", (item['cantidad'], item['id']))
     
     db.commit()
     db.close()
     return jsonify({"ok": True})
 
-# --- RUTA: BOLETAS Y COBROS ---
+# --- RUTAS DE COBRANZAS ---
 @app.route("/boletas")
 def boletas():
     db = get_db()
@@ -181,5 +172,4 @@ def registrar_pago():
     return redirect("/boletas")
 
 if __name__ == "__main__":
-    # Importante: host 0.0.0.0 para que sea accesible desde el WiFi de tu celular
     app.run(host="0.0.0.0", port=10000, debug=False)
