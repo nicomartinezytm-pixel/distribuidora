@@ -1,27 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-    .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-    .stat-card { padding: 20px; text-align: center; border-radius: 15px; }
-    .val { font-size: 30px; font-weight: bold; display: block; margin-top: 10px; }
-</style>
-<h1>📊 Panel de Control</h1>
-<div class="grid-stats">
-    <div class="card stat-card" style="border-bottom: 5px solid #22c55e;">
-        <span style="color: #94a3b8;">Ventas Totales</span>
-        <span class="val" style="color: #22c55e;">${{ total_ventas }}</span>
+<h1 style="font-size: 20px;">Resumen de Negocio</h1>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+    <div class="card" style="text-align:center;">
+        <small style="color:#94a3b8">Ventas</small>
+        <div style="font-size: 20px; font-weight: bold; color: #22c55e;">${{ total_ventas }}</div>
     </div>
-    <div class="card stat-card" style="border-bottom: 5px solid #ef4444;">
-        <span style="color: #94a3b8;">Compras/Inversión</span>
-        <span class="val" style="color: #ef4444;">${{ total_compras }}</span>
+    <div class="card" style="text-align:center;">
+        <small style="color:#94a3b8">Stock Bajo</small>
+        <div style="font-size: 20px; font-weight: bold; color: #f59e0b;">{{ alertas_stock }}</div>
     </div>
-    <div class="card stat-card" style="border-bottom: 5px solid #3b82f6;">
-        <span style="color: #94a3b8;">Ganancia Neta</span>
-        <span class="val" style="color: #3b82f6;">${{ ganancia }}</span>
-    </div>
-    <div class="card stat-card" style="border-bottom: 5px solid #f59e0b;">
-        <span style="color: #94a3b8;">Stock Bajo</span>
-        <span class="val" style="color: #f59e0b;">{{ alertas_stock }}</span>
-    </div>
+</div>
+<div class="card" style="text-align:center; border-left: 5px solid #3b82f6;">
+    <small style="color:#94a3b8">Ganancia Estimada</small>
+    <div style="font-size: 28px; font-weight: bold;">${{ ganancia }}</div>
 </div>
 {% endblock %}
