@@ -48,11 +48,10 @@ def init_db():
     CREATE TABLE IF NOT EXISTS compras (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         producto TEXT,
-        proveedor TEXT,
         lugar TEXT,
         cantidad INTEGER,
-        precio REAL,
         total REAL,
+        precio_unitario REAL,
         fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )
     """)
@@ -101,20 +100,19 @@ def eliminar_producto(id):
     return redirect("/")
 
 
-# ---------------- COMPRAS ----------------
+# ---------------- COMPRAS MAYORISTAS ----------------
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
 
     producto = request.form["producto"]
-    proveedor = request.form["proveedor"]
     lugar = request.form["lugar"]
     cantidad = int(request.form["cantidad"])
-    precio = float(request.form["precio"])
+    total = float(request.form["total"])
 
-    total = cantidad * precio
+    precio_unitario = total / cantidad if cantidad > 0 else 0
 
-    # ✔ sumar stock
+    # sumar stock automático
     prod = db.execute("SELECT * FROM productos WHERE nombre=?", (producto,)).fetchone()
 
     if prod:
@@ -125,9 +123,9 @@ def agregar_compra():
         """, (cantidad, producto))
 
     db.execute("""
-        INSERT INTO compras (producto, proveedor, lugar, cantidad, precio, total)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (producto, proveedor, lugar, cantidad, precio, total))
+        INSERT INTO compras (producto, lugar, cantidad, total, precio_unitario)
+        VALUES (?, ?, ?, ?, ?)
+    """, (producto, lugar, cantidad, total, precio_unitario))
 
     db.commit()
     db.close()
@@ -160,7 +158,6 @@ def finalizar_venta():
         subtotal = prod["precio"] * item["cantidad"]
         total += subtotal
 
-        # ✔ restar stock
         db.execute("""
             UPDATE productos
             SET stock = stock - ?
@@ -178,18 +175,34 @@ def finalizar_venta():
     return jsonify({"ok": True})
 
 
-# ---------------- STOCK BAJO ----------------
-@app.route("/stock_bajo")
-def stock_bajo():
+# ---------------- CLIENTES ----------------
+@app.route("/clientes")
+def clientes():
     db = get_db()
 
-    productos = db.execute("""
-        SELECT * FROM productos
-        WHERE stock <= 5
+    clientes = db.execute("""
+        SELECT c.id, c.nombre,
+        COALESCE(SUM(v.total),0) as total_comprado
+        FROM clientes c
+        LEFT JOIN ventas v ON v.cliente_id = c.id
+        GROUP BY c.id
     """).fetchall()
 
     db.close()
-    return render_template("stock_bajo.html", productos=productos)
+    return render_template("clientes.html", clientes=clientes)
+
+
+# ---------------- BOLETAS ----------------
+@app.route("/boletas")
+def boletas():
+    db = get_db()
+
+    boletas = db.execute("""
+        SELECT * FROM ventas ORDER BY id DESC
+    """).fetchall()
+
+    db.close()
+    return render_template("boletas.html", boletas=boletas)
 
 
 # ---------------- DASHBOARD ----------------
@@ -203,24 +216,6 @@ def dashboard():
 
     ganancia = total_ventas - total_compras
 
-    ventas_mes = db.execute("""
-        SELECT SUM(total)
-        FROM ventas
-        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
-    """).fetchone()[0] or 0
-
-    compras_mes = db.execute("""
-        SELECT SUM(total)
-        FROM compras
-        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
-    """).fetchone()[0] or 0
-
-    ganancia_mes = ventas_mes - compras_mes
-
-    margen = 0
-    if total_ventas > 0:
-        margen = ((total_ventas - total_compras) / total_ventas) * 100
-
     db.close()
 
     return render_template(
@@ -228,11 +223,7 @@ def dashboard():
         total_ventas=total_ventas,
         total_compras=total_compras,
         ventas=ventas,
-        ganancia=ganancia,
-        ventas_mes=ventas_mes,
-        compras_mes=compras_mes,
-        ganancia_mes=ganancia_mes,
-        margen=margen
+        ganancia=ganancia
     )
 
 
