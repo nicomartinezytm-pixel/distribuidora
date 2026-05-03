@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ventas</title>
+    <title>Ventas PRO</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="/static/style.css">
@@ -11,7 +11,7 @@
             margin: 0;
             font-family: Arial;
             background: #f2f2f2;
-            padding-bottom: 90px;
+            padding-bottom: 100px;
         }
 
         h1 {
@@ -38,8 +38,8 @@
         }
 
         button {
-            padding: 10px;
             width: 100%;
+            padding: 10px;
             background: #111;
             color: white;
             border: none;
@@ -51,27 +51,27 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 8px 0;
             padding: 8px;
-            background: #f9f9f9;
+            margin: 5px 0;
+            background: #f7f7f7;
             border-radius: 8px;
-        }
-
-        .producto button {
-            width: auto;
-            padding: 6px 10px;
         }
 
         .carrito-item {
             display: flex;
             justify-content: space-between;
-            margin: 5px 0;
+            padding: 5px 0;
         }
 
-        .total {
-            font-size: 20px;
+        .total-box {
+            font-size: 22px;
             font-weight: bold;
+            text-align: center;
             margin-top: 10px;
+            padding: 10px;
+            background: #111;
+            color: white;
+            border-radius: 10px;
         }
 
         .back-btn {
@@ -83,16 +83,6 @@
             padding: 10px;
             border-radius: 50%;
             text-decoration: none;
-        }
-
-        .bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #111;
-            color: white;
-            padding: 10px;
         }
     </style>
 </head>
@@ -124,17 +114,14 @@
     <h3>Carrito</h3>
     <div id="carrito"></div>
 
-    <div class="total">
-        Total: $<span id="total">0</span>
+    <!-- 🔥 TOTAL GRANDE CLARO -->
+    <div class="total-box">
+        TOTAL A PAGAR: $<span id="total">0</span>
     </div>
 
     <button onclick="finalizar()">FINALIZAR VENTA</button>
 </div>
 
-</div>
-
-<div class="bottom">
-    💡 Sistema POS activo
 </div>
 
 <script>
@@ -145,6 +132,7 @@ let carrito = [];
 fetch("/productos_json")
 .then(r => r.json())
 .then(data => {
+
     let cont = document.getElementById("productos");
 
     data.forEach(p => {
@@ -158,6 +146,7 @@ fetch("/productos_json")
         </div>
         `;
     });
+
 });
 
 function agregar(id, nombre, precio) {
@@ -174,6 +163,7 @@ function agregar(id, nombre, precio) {
 }
 
 function render() {
+
     let cont = document.getElementById("carrito");
     cont.innerHTML = "";
 
@@ -186,13 +176,15 @@ function render() {
 
         cont.innerHTML += `
         <div class="carrito-item">
-            ${p.nombre} x${p.cantidad} - $${subtotal}
+            ${p.nombre} x${p.cantidad}
+            <span>$${subtotal}</span>
             <button onclick="quitar(${i})">❌</button>
         </div>
         `;
     });
 
-    document.getElementById("total").innerText = total;
+    // 🔥 TOTAL EN TIEMPO REAL
+    document.getElementById("total").innerText = total.toFixed(2);
 }
 
 function quitar(i) {
@@ -223,6 +215,7 @@ function finalizar() {
         alert("Venta realizada ✔");
         location.reload();
     });
+
 }
 
 </script>
