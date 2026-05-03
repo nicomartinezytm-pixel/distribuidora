@@ -2,83 +2,58 @@
 {% block content %}
 
 <style>
-    .estado { padding: 4px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
-    .estado-pagado { background: #dcfce7; color: #166534; }
-    .estado-parcial { background: #fef3c7; color: #92400e; }
-    .estado-fiado { background: #fee2e2; color: #991b1b; }
-    .modal-pago { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+    .grid-boletas { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    .status-fiado { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .status-pagado { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .status-parcial { background: #fef9c3; color: #854d0e; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .detalle-item { display: flex; justify-content: space-between; font-size: 13px; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 4px 0; }
 </style>
 
-<h1>📄 Boletas y Cobranzas</h1>
+<h1>📑 Historial de Boletas y Cobranza</h1>
 
-<div class="container">
+<div class="grid-boletas">
     {% for b in boletas %}
-    <div class="card">
-        <div style="display: flex; justify-content: space-between;">
-            <div>
-                <h3>{{ b['cliente'] }}</h3>
-                <small>{{ b['fecha'] }}</small>
-            </div>
-            <span class="estado estado-{{ b['estado'] }}">{{ b['estado']|upper }}</span>
+    <div class="card" style="border-top: 4px solid {% if b.estado == 'pagado' %}#22c55e{% else %}#ef4444{% endif %};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <small style="color: #64748b;">{{ b.fecha }}</small>
+            <span class="status-{{ b.estado }}">{{ b.estado|upper }}</span>
         </div>
         
-        <div style="margin: 15px 0; font-size: 14px;">
-            {% for item in b['detalle']|fromjson %}
-                • {{ item.cantidad }}x {{ item.nombre }} ($${{ item.subtotal }})<br>
+        <h3 style="margin: 10px 0 5px 0;">{{ b.cliente }}</h3>
+        <p style="font-size: 12px; color: #94a3b8; margin: 0;">📍 {{ b.direccion }}</p>
+
+        <div style="margin: 15px 0; max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+            {% for item in b.detalle|fromjson %}
+            <div class="detalle-item">
+                <span>{{ item.cantidad }}x {{ item.nombre }}</span>
+                <span>${{ item.subtotal }}</span>
+            </div>
             {% endfor %}
         </div>
 
-        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between;">
-                <span>Total:</span> <b>${{ b['total'] }}</b>
-            </div>
-            <div style="display: flex; justify-content: space-between; color: #22c55e;">
-                <span>Pagado:</span> <b>${{ b['pagado'] }}</b>
-            </div>
-            <div style="display: flex; justify-content: space-between; color: #ef4444; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 5px;">
-                <span>Saldo Pendiente:</span> <b>${{ b['saldo'] }}</b>
-            </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <span>Total: <b>${{ b.total }}</b></span>
+            <span style="color: #ef4444;">Resta: <b>${{ b.saldo }}</b></span>
         </div>
 
-        <div style="margin-top: 15px; display: flex; gap: 10px;">
-            {% if b['saldo'] > 0 %}
-            <button onclick="abrirPago({{ b['id'] }}, '{{ b['cliente'] }}', {{ b['saldo'] }})" style="flex: 2; background: #22c55e;">💰 Registrar Pago</button>
-            {% endif %}
-            <a href="/eliminar_venta/{{ b['id'] }}" onclick="return confirm('¿Anular boleta y devolver stock?')" style="flex: 1; text-align: center;">
-                <button style="background: #ef4444; width: 100%;">🗑️ Anular</button>
-            </a>
+        {% if b.saldo > 0 %}
+        <hr style="opacity: 0.1; margin: 15px 0;">
+        <form action="/registrar_pago" method="POST" style="display: flex; gap: 10px;">
+            <input type="hidden" name="id" value="{{ b.id }}">
+            <input type="number" step="0.01" name="monto" placeholder="Monto que entrega" required style="flex: 1; padding: 8px;">
+            <button type="submit" style="background: #22c55e; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                Guardar Pago
+            </button>
+        </form>
+        {% else %}
+        <div style="margin-top: 15px; text-align: center; color: #22c55e; font-weight: bold;">
+            ✅ Boleta totalmente pagada
         </div>
+        {% endif %}
     </div>
+    {% else %}
+    <p>No hay ventas registradas aún.</p>
     {% endfor %}
 </div>
-
-<!-- Modal para registrar pagos -->
-<div id="modalPago" class="modal-pago">
-    <div class="card" style="max-width: 350px; margin: 20% auto;">
-        <h3>Cobrar a: <span id="pagoCliente"></span></h3>
-        <p>Deuda pendiente: <b id="pagoSaldo"></b></p>
-        <form action="/pagar_boleta" method="POST">
-            <input type="hidden" name="id" id="pagoId">
-            <label>Monto que entrega el cliente:</label>
-            <input type="number" name="monto" step="0.01" placeholder="Ej: 500" required autofocus>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button type="submit" style="background: #22c55e; flex: 1;">Confirmar Pago</button>
-                <button type="button" onclick="cerrarPago()" style="background: #475569; flex: 1;">Cancelar</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-function abrirPago(id, cliente, saldo) {
-    document.getElementById('pagoId').value = id;
-    document.getElementById('pagoCliente').innerText = cliente;
-    document.getElementById('pagoSaldo').innerText = "$" + saldo;
-    document.getElementById('modalPago').style.display = 'block';
-}
-function cerrarPago() {
-    document.getElementById('modalPago').style.display = 'none';
-}
-</script>
 
 {% endblock %}
