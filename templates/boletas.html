@@ -27,21 +27,13 @@
     </div>
     
     <div style="display:flex; gap:10px; margin-top:15px;">
-        <!-- Botón de Pago (abre el modal de abajo) -->
         <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1; padding: 12px; font-weight: bold;">💰 Pagar</button>
         
-        <!-- EL LINK DEFINITIVO PARA MÓVILES -->
-        {% set num_limpio = v.whatsapp|string|replace(' ', '')|replace('-', '')|replace('+', '') %}
-        {% if num_limpio|length == 10 %}
-            {% set num_final = "549" ~ num_limpio %}
-        {% else %}
-            {% set num_final = num_limpio %}
-        {% endif %}
-
-        <a href="https://api.whatsapp.com/send/?phone={{ num_final }}&text=Hola%20{{ v.cliente|urlencode }}%21%20Ten%C3%A9s%20un%20saldo%20pendiente%20de%20%24{{ v.saldo }}&type=phone_number&app_absent=0" 
-           style="flex:1; background:#22c55e; text-decoration:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; text-align:center; display:flex; align-items:center; justify-content:center;">
+        <!-- BOTÓN CON PROTOCOLO DE FORZADO PARA ANDROID -->
+        <button onclick="forzarWhatsApp('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" 
+                style="flex:1; background:#22c55e; border:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;">
             📲 WhatsApp
-        </a>
+        </button>
     </div>
 </div>
 
@@ -56,9 +48,38 @@
                    style="width:100%; padding: 12px; margin-bottom:15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white;">
             <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar Pago</button>
             <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" 
-                    style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar sin guardar</button>
+                    style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar</button>
         </form>
     </div>
 </div>
 {% endfor %}
+
+<script>
+function forzarWhatsApp(telefono, nombre, saldo) {
+    // 1. Limpiamos el número
+    let n = telefono.replace(/\D/g, '');
+    
+    // 2. Le ponemos el 549 si tiene 10 dígitos (formato 3541...)
+    if (n.length === 10) {
+        n = "549" + n;
+    } else if (n.length > 0 && !n.startsWith('54')) {
+        n = "549" + n;
+    }
+
+    let texto = `Hola ${nombre}! Te escribo para recordarte el saldo pendiente de $${saldo}. Gracias!`;
+    let encodedText = encodeURIComponent(texto);
+
+    // 3. INTENT: Esto es lo que fuerza a Android a abrir la APP de WhatsApp
+    // Si falla (porque estás en PC), usa el link normal.
+    let intentUrl = `intent://send?phone=${n}&text=${encodedText}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+    let fallbackUrl = `https://api.whatsapp.com/send?phone=${n}&text=${encodedText}`;
+
+    // Detectamos si es un dispositivo móvil (Android/iOS)
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = intentUrl;
+    } else {
+        window.open(fallbackUrl, '_blank');
+    }
+}
+</script>
 {% endblock %}
