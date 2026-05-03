@@ -1,155 +1,96 @@
 {% extends "base.html" %}
 {% block content %}
+<h1>🧾 Nueva Venta</h1>
 
-<div class="container">
-
-<h1>🧾 Ventas</h1>
-
-<!-- ================= CLIENTE ================= -->
 <div class="card">
-<h3>👤 Cliente</h3>
-
-<input id="nombre" placeholder="Nombre del cliente">
-<input id="direccion" placeholder="Dirección">
-
-<!-- 💰 NUEVO: PAGO -->
-<input id="pagado" placeholder="Dinero que paga ahora (opcional)">
+    <h3>👤 Cliente</h3>
+    <input id="nombre" placeholder="Nombre del cliente">
+    <input id="direccion" placeholder="Dirección">
+    <input id="pagado" type="number" placeholder="¿Cuánto paga ahora?">
 </div>
 
-<!-- ================= PRODUCTOS ================= -->
 <div class="card">
-<h3>📦 Productos disponibles</h3>
-
-<div id="productos"></div>
-
+    <h3>📦 Stock disponible</h3>
+    <div id="productos_lista" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
 </div>
 
-<!-- ================= CARRITO ================= -->
 <div class="card">
-<h3>🛒 Carrito de venta</h3>
-
-<div id="carrito"></div>
-
-<h2>Total: $<span id="total">0</span></h2>
-
-<button onclick="finalizar()">FINALIZAR VENTA</button>
-
-</div>
-
+    <h3>🛒 Carrito</h3>
+    <div id="carrito_lista"></div>
+    <h2 style="text-align: right;">Total: $<span id="total_pago">0</span></h2>
+    <button onclick="finalizar()" style="background: #22c55e;">COMPLETAR VENTA</button>
 </div>
 
 <script>
-
 let carrito = [];
 
-// CARGAR PRODUCTOS
-fetch("/productos_json")
-.then(r => r.json())
-.then(data => {
-
-    let div = document.getElementById("productos");
-
-    data.forEach(p => {
-
-        div.innerHTML += `
-        <div class="card">
-            <b>${p.nombre}</b><br>
-            💰 $${p.precio}<br>
-
-            <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio})">
-                Agregar
-            </button>
-        </div>
-        `;
-    });
-
-});
-
-function agregar(id, nombre, precio){
-
-    let item = carrito.find(p => p.id === id);
-
-    if(item){
-        item.cantidad++;
-    } else {
-        carrito.push({
-            id:id,
-            nombre:nombre,
-            precio:precio,
-            cantidad:1
+function cargarProductos() {
+    fetch("/productos_json")
+    .then(r => r.json())
+    .then(data => {
+        const div = document.getElementById("productos_lista");
+        div.innerHTML = ""; 
+        data.forEach(p => {
+            div.innerHTML += `
+            <div class="card" style="margin:0; padding:10px; font-size:13px;">
+                <b>${p.nombre}</b><br>
+                $${p.precio} | Stock: ${p.stock}<br>
+                <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio}, ${p.stock})" 
+                        style="padding:5px; margin-top:5px; font-size:11px;" 
+                        ${p.stock <= 0 ? 'disabled style="background:gray"' : ''}>
+                    ${p.stock <= 0 ? 'Agotado' : 'Añadir'}
+                </button>
+            </div>`;
         });
+    });
+}
+
+function agregar(id, nombre, precio, stockMax) {
+    let item = carrito.find(p => p.id === id);
+    if(item) {
+        if(item.cantidad < stockMax) item.cantidad++;
+        else alert("Sin stock");
+    } else {
+        carrito.push({id, nombre, precio, cantidad: 1});
     }
-
-    render();
+    renderCarrito();
 }
 
-function render(){
-
-    let div = document.getElementById("carrito");
+function renderCarrito() {
+    const div = document.getElementById("carrito_lista");
     div.innerHTML = "";
-
     let total = 0;
-
     carrito.forEach((p, i) => {
-
-        let subtotal = p.precio * p.cantidad;
-        total += subtotal;
-
-        div.innerHTML += `
-        <div class="card">
-            ${p.nombre} x${p.cantidad} = $${subtotal}
-            <button class="red" onclick="quitar(${i})">Eliminar</button>
-        </div>
-        `;
+        let sub = p.precio * p.cantidad;
+        total += sub;
+        div.innerHTML += `<div style="display:flex; justify-content:space-between; margin:5px 0;">
+            <span>${p.nombre} x${p.cantidad}</span>
+            <span>$${sub} <button class="red" onclick="quitar(${i})" style="width:30px; display:inline; padding:2px;">X</button></span>
+        </div>`;
     });
-
-    document.getElementById("total").innerText = total.toFixed(2);
+    document.getElementById("total_pago").innerText = total.toFixed(2);
 }
 
-function quitar(i){
-    carrito.splice(i,1);
-    render();
-}
+function quitar(i) { carrito.splice(i, 1); renderCarrito(); }
 
-function finalizar(){
-
-    let total = parseFloat(document.getElementById("total").innerText);
-    let pagado = parseFloat(document.getElementById("pagado").value || 0);
-
-    let saldo = total - pagado;
-
+function finalizar() {
+    if(carrito.length === 0) return alert("Carrito vacío");
     let data = {
-        cliente:{
-            nombre: document.getElementById("nombre").value,
-            direccion: document.getElementById("direccion").value
-        },
+        cliente: { nombre: document.getElementById("nombre").value || "Consumidor Final", direccion: document.getElementById("direccion").value || "N/C" },
         carrito: carrito,
-        pagado: pagado,
-        saldo: saldo
+        pagado: document.getElementById("pagado").value || 0
     };
-
-    fetch("/finalizar_venta",{
-        method:"POST",
-        headers:{
-            "Content-Type":"application/x-www-form-urlencoded"
-        },
-        body:"data="+encodeURIComponent(JSON.stringify(data))
-    })
-
-    .then(r=>r.json())
-    .then(res=>{
-        alert(
-            "Venta realizada ✔\n" +
-            "Total: $" + total + "\n" +
-            "Pagado: $" + pagado + "\n" +
-            "Saldo: $" + saldo
-        );
-
-        location.reload();
+    fetch("/finalizar_venta", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "data=" + encodeURIComponent(JSON.stringify(data))
+    }).then(() => {
+        alert("Venta exitosa");
+        carrito = [];
+        renderCarrito();
+        cargarProductos(); // Actualiza stock visual
     });
-
 }
-
+cargarProductos();
 </script>
-
 {% endblock %}
