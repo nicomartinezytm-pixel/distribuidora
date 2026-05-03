@@ -12,15 +12,17 @@
 <div>
 
 <h2>💰 General</h2>
-<p>Ventas: ${{ total_ventas }}</p>
-<p>Compras: ${{ total_compras }}</p>
-<p>Ganancia: ${{ ganancia }}</p>
-<p>Margen: {{ margen|round(2) }}%</p>
+<p>Ventas: ${{ total_ventas or 0 }}</p>
+<p>Compras: ${{ total_compras or 0 }}</p>
+<p>Ganancia: ${{ ganancia or 0 }}</p>
+<p>Margen: {{ margen|default(0)|round(2) }}%</p>
+
+<hr>
 
 <h2>📅 Mensual</h2>
-<p>Ventas mes: ${{ ventas_mes }}</p>
-<p>Compras mes: ${{ compras_mes }}</p>
-<p>Ganancia mes: ${{ ganancia_mes }}</p>
+<p>Ventas mes: ${{ ventas_mes or 0 }}</p>
+<p>Compras mes: ${{ compras_mes or 0 }}</p>
+<p>Ganancia mes: ${{ ganancia_mes or 0 }}</p>
 
 </div>
 
@@ -32,7 +34,11 @@ new Chart(document.getElementById("grafico"), {
     data: {
         labels: ["Ventas", "Compras", "Ganancia"],
         datasets: [{
-            data: [{{ total_ventas }}, {{ total_compras }}, {{ ganancia }}]
+            data: [
+                {{ total_ventas or 0 }},
+                {{ total_compras or 0 }},
+                {{ ganancia or 0 }}
+            ]
         }]
     }
 });
