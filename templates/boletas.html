@@ -9,19 +9,18 @@
         <span class="badge {{ v.estado }}">{{ v.estado.upper() }}</span>
     </div>
     
-    <p style="color: #94a3b8; font-size: 14px; margin: 5px 0;">📍 {{ v.direccion }}</p>
     <p style="color: #94a3b8; font-size: 14px; margin: 5px 0;">📱 {{ v.whatsapp }}</p>
     
     <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin: 10px 0;">
         {% for item in v.detalle|fromjson %}
-        <div style="display:flex; justify-content:space-between; font-size: 13px; margin-bottom: 3px;">
+        <div style="display:flex; justify-content:space-between; font-size: 13px;">
             <span>{{ item.nombre }} (x{{ item.cantidad }})</span>
             <span>${{ item.precio * item.cantidad }}</span>
         </div>
         {% endfor %}
     </div>
 
-    <div style="display:flex; justify-content:space-between; border-top: 1px solid #334155; padding-top: 10px; margin-top: 5px;">
+    <div style="display:flex; justify-content:space-between; border-top: 1px solid #334155; padding-top: 10px;">
         <span>Total: <b>${{ v.total }}</b></span>
         <span style="color:#ef4444;">Debe: <b>${{ v.saldo }}</b></span>
     </div>
@@ -29,58 +28,26 @@
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1; padding: 12px; font-weight: bold;">💰 Pagar</button>
         
-        <button onclick="enviarWhatsApp('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" 
-                style="flex:1; background:#22c55e; border:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+        <!-- BOTÓN CON ENLACE DIRECTO SIN JAVASCRIPT COMPLEJO -->
+        <a href="https://wa.me/{{ v.whatsapp|replace(' ', '')|replace('-', '') }}?text=Hola%20{{ v.cliente }},%20tenes%20un%20saldo%20de%20${{ v.saldo }}" 
+           target="_blank" 
+           style="flex:1; background:#22c55e; text-decoration:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; text-align:center; display:flex; align-items:center; justify-content:center;">
             📲 WhatsApp
-        </button>
+        </a>
     </div>
 </div>
 
-<!-- Modal Pago -->
+<!-- Modal para registrar pago (Sigue igual) -->
 <div id="m-{{v.id}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
     <div class="card" style="margin:20% auto; width: 85%; background:#1e293b; padding: 25px;">
         <h3>Registrar entrega</h3>
         <form action="/registrar_pago" method="POST">
             <input type="hidden" name="id" value="{{ v.id }}">
-            <p>Cliente: <b>{{ v.cliente }}</b></p>
-            <input type="number" step="0.01" name="monto" placeholder="¿Cuánto pagó?" required 
-                   style="width:100%; padding: 12px; margin-bottom:15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white;">
-            <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar</button>
-            <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" 
-                    style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar</button>
+            <input type="number" step="0.01" name="monto" placeholder="Monto" required style="width:100%; padding: 10px; margin-bottom:10px; background:#0f172a; color:white; border:1px solid #334155;">
+            <button type="submit" style="width:100%; background:#3b82f6; padding: 10px; border:none; color:white; border-radius:5px;">Confirmar</button>
+            <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" style="width:100%; background:transparent; border:none; color:white; margin-top:10px;">Cerrar</button>
         </form>
     </div>
 </div>
 {% endfor %}
-
-<script>
-function enviarWhatsApp(telefono, nombre, saldo) {
-    // 1. Limpieza estricta
-    let num = telefono.replace(/\D/g, '');
-    
-    // 2. Formateo para Argentina (54 + 9 + número sin 15)
-    if (num.length === 10) {
-        num = "549" + num;
-    } else if (num.startsWith('54') && num.length === 12 && num.charAt(2) !== '9') {
-        num = '549' + num.substring(2);
-    } else if (num.length > 0 && !num.startsWith('54')) {
-        num = "549" + num;
-    }
-
-    let msj = encodeURIComponent(`Hola ${nombre}! Te escribo para recordarte el saldo pendiente de $${saldo}. Muchas gracias!`);
-    
-    // 3. LA SOLUCIÓN AL ERR_UNKNOWN_URL_SCHEME:
-    // En lugar de wa.me, usamos la URL completa de la API que es más "amigable" para los navegadores
-    let url = `https://api.whatsapp.com/send?phone=${num}&text=${msj}`;
-    
-    // Intentamos abrirlo de una forma que el navegador no bloquee
-    const win = window.open(url, '_blank');
-    if (win) {
-        win.focus();
-    } else {
-        // Si el navegador bloquea la ventana emergente, usamos la misma ventana como último recurso
-        location.href = url;
-    }
-}
-</script>
 {% endblock %}
