@@ -1,27 +1,131 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #f2f2f2;
+            padding-bottom: 80px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* BOTÓN VOLVER FLOTANTE */
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: #111;
+            color: white;
+            padding: 10px 12px;
+            border-radius: 50%;
+            text-decoration: none;
+            z-index: 9999;
+            font-size: 18px;
+        }
+
+        /* BARRA INFERIOR */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background: #111;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #333;
+            z-index: 9999;
+        }
+
+        .nav-item {
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            font-size: 12px;
+            flex: 1;
+        }
+
+        .nav-item span {
+            display: block;
+            font-size: 11px;
+        }
+
+        .nav-item:active {
+            background: #222;
+            border-radius: 10px;
+        }
+
+        /* CONTENIDO */
+        .container {
+            padding: 15px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
+
 <body>
 
-<h1>Dashboard</h1>
+<!-- BOTÓN VOLVER -->
+<a href="/" class="back-btn">←</a>
 
-<h2>Total: ${{total}}</h2>
-<h2>Ventas: {{ventas}}</h2>
+<h1>📊 Dashboard</h1>
 
-<canvas id="g"></canvas>
+<div class="container">
 
-<script>
-new Chart(document.getElementById("g"),{
-type:"bar",
-data:{
-labels: {{nombres|tojson}},
-datasets:[{data: {{totales|tojson}}}]
-}
-})
-</script>
+    <div class="card">
+        <h2>Total ventas</h2>
+        <p>${{ total }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Cantidad de ventas</h2>
+        <p>{{ ventas }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Ranking clientes</h2>
+
+        {% for r in ranking %}
+            <p>👤 {{ r[0] }} - ${{ r[1] }}</p>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- BARRA INFERIOR -->
+<div class="bottom-nav">
+
+    <a href="/" class="nav-item">
+        🏠<span>Inicio</span>
+    </a>
+
+    <a href="/vender" class="nav-item">
+        💰<span>Vender</span>
+    </a>
+
+    <a href="/dashboard" class="nav-item">
+        📊<span>Stats</span>
+    </a>
+
+</div>
 
 </body>
 </html>
