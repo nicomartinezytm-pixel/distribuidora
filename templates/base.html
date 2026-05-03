@@ -3,29 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestión PRO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Distribuidora</title>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
         .container { padding: 15px; }
-        .card { background: var(--card); padding: 15px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #334155; }
-        nav { background: var(--card); position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #334155; z-index: 1000; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        nav { background: var(--card); position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #334155; }
         nav a { color: #94a3b8; text-decoration: none; font-size: 11px; text-align: center; }
-        .icon { font-size: 22px; display: block; margin-bottom: 2px; }
-        input, select, button { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; margin-bottom: 10px; }
-        button { background: var(--accent); border: none; font-weight: bold; cursor: pointer; }
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 12px; background: #064e3b; color: #4ade80; }
+        input, button, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; font-size: 16px; }
+        button { background: var(--accent); font-weight: bold; border: none; }
     </style>
 </head>
 <body>
     <div class="container">{% block content %}{% endblock %}</div>
     <nav>
-        <a href="/dashboard"><span class="icon">📊</span>Panel</a>
-        <a href="/"><span class="icon">📦</span>Stock</a>
-        <a href="/vender"><span class="icon">🛒</span>Vender</a>
-        <a href="/boletas"><span class="icon">📑</span>Cobros</a>
+        <a href="/dashboard"><span>📊</span><br>Panel</a>
+        <a href="/"><span>📦</span><br>Stock</a>
+        <a href="/vender"><span>🛒</span><br>Vender</a>
+        <a href="/compras"><span>🏭</span><br>Compras</a>
+        <a href="/boletas"><span>📑</span><br>Cobros</a>
     </nav>
 </body>
 </html>
