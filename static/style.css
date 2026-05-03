@@ -5,10 +5,17 @@
 body{
     margin:0;
     font-family:system-ui, Arial, sans-serif;
-    background:#f4f6f9;
-    color:#1f2937;
+
+    /* 🌌 FONDO PRO (DARK GRADIENT) */
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+
+    color:#e5e7eb;
     -webkit-tap-highlight-color: transparent;
 }
+
+/* =========================
+   CONTENEDOR
+========================= */
 
 .container{
     padding:15px;
@@ -17,28 +24,38 @@ body{
     padding-bottom:90px;
 }
 
+/* =========================
+   TITULOS
+========================= */
+
 h1{
     text-align:center;
     font-size:22px;
     margin:15px 0;
     font-weight:700;
+    color:#ffffff;
 }
 
-h3{
-    margin:8px 0 12px;
+h2, h3{
+    color:#e5e7eb;
 }
 
 /* =========================
-   CARDS
+   CARDS (GLASS STYLE PRO)
 ========================= */
 
 .card{
-    background:white;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
     padding:14px;
     margin:12px 0;
     border-radius:16px;
-    box-shadow:0 4px 14px rgba(0,0,0,0.06);
-    border:1px solid #eef0f3;
+
+    border:1px solid rgba(255,255,255,0.1);
+
+    box-shadow:0 8px 25px rgba(0,0,0,0.35);
 }
 
 /* =========================
@@ -49,11 +66,19 @@ input{
     width:100%;
     padding:10px;
     margin:6px 0;
+
     border-radius:10px;
-    border:1px solid #e5e7eb;
+    border:1px solid rgba(255,255,255,0.2);
+
     outline:none;
     font-size:14px;
-    background:white;
+
+    background: rgba(255,255,255,0.08);
+    color:white;
+}
+
+input::placeholder{
+    color:#cbd5e1;
 }
 
 /* =========================
@@ -63,12 +88,16 @@ input{
 button{
     width:100%;
     padding:10px;
+
     border:none;
     border-radius:10px;
-    background:#2563eb;
+
+    background:#3b82f6;
     color:white;
+
     font-weight:600;
     font-size:14px;
+
     cursor:pointer;
 }
 
@@ -81,15 +110,15 @@ button.red{
 }
 
 /* =========================
-   BOTONES EN LINKS
+   LINKS BOTONES
 ========================= */
 
-a button{
-    margin-top:6px;
+a{
+    text-decoration:none;
 }
 
 /* =========================
-   NAV BOTTOM (MÓVIL PRO)
+   BOTTOM NAV (MÓVIL PRO)
 ========================= */
 
 .bottom-nav{
@@ -99,17 +128,20 @@ a button{
     width:100%;
     height:65px;
 
-    background:#111827;
+    background: rgba(15,23,42,0.95);
+    backdrop-filter: blur(10px);
+
     display:flex;
     justify-content:space-around;
     align-items:center;
 
+    border-top:1px solid rgba(255,255,255,0.1);
+
     padding-bottom: env(safe-area-inset-bottom);
-    box-shadow:0 -2px 10px rgba(0,0,0,0.15);
 }
 
 .bottom-nav a{
-    color:white;
+    color:#e5e7eb;
     text-decoration:none;
     font-size:12px;
     text-align:center;
@@ -132,15 +164,7 @@ a button{
 }
 
 /* =========================
-   TOTAL BOX
-========================= */
-
-h2{
-    margin-top:10px;
-}
-
-/* =========================
-   MOBILE FIX REAL
+   RESPONSIVE MOBILE
 ========================= */
 
 @media (max-width:600px){
