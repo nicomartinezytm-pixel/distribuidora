@@ -114,11 +114,15 @@ def agregar_compra():
 
     total = cantidad * precio
 
-    # 📦 sumar stock automáticamente
+    # ✔ sumar stock
     prod = db.execute("SELECT * FROM productos WHERE nombre=?", (producto,)).fetchone()
 
     if prod:
-        db.execute("UPDATE productos SET stock = stock + ? WHERE nombre=?", (cantidad, producto))
+        db.execute("""
+            UPDATE productos
+            SET stock = stock + ?
+            WHERE nombre=?
+        """, (cantidad, producto))
 
     db.execute("""
         INSERT INTO compras (producto, proveedor, lugar, cantidad, precio, total)
@@ -127,7 +131,6 @@ def agregar_compra():
 
     db.commit()
     db.close()
-
     return redirect("/")
 
 
@@ -157,7 +160,7 @@ def finalizar_venta():
         subtotal = prod["precio"] * item["cantidad"]
         total += subtotal
 
-        # 📦 restar stock automático
+        # ✔ restar stock
         db.execute("""
             UPDATE productos
             SET stock = stock - ?
@@ -175,7 +178,21 @@ def finalizar_venta():
     return jsonify({"ok": True})
 
 
-# ---------------- DASHBOARD PRO ----------------
+# ---------------- STOCK BAJO ----------------
+@app.route("/stock_bajo")
+def stock_bajo():
+    db = get_db()
+
+    productos = db.execute("""
+        SELECT * FROM productos
+        WHERE stock <= 5
+    """).fetchall()
+
+    db.close()
+    return render_template("stock_bajo.html", productos=productos)
+
+
+# ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
@@ -200,6 +217,10 @@ def dashboard():
 
     ganancia_mes = ventas_mes - compras_mes
 
+    margen = 0
+    if total_ventas > 0:
+        margen = ((total_ventas - total_compras) / total_ventas) * 100
+
     db.close()
 
     return render_template(
@@ -210,7 +231,8 @@ def dashboard():
         ganancia=ganancia,
         ventas_mes=ventas_mes,
         compras_mes=compras_mes,
-        ganancia_mes=ganancia_mes
+        ganancia_mes=ganancia_mes,
+        margen=margen
     )
 
 
