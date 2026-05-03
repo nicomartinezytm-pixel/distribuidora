@@ -1,36 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
-
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-    <h1>Inventario</h1>
-    <button onclick="document.getElementById('modal-agregar').style.display='flex'" style="width: auto; padding: 10px 20px;">+ Nuevo</button>
+    <h1 style="margin:0; font-size: 20px;">Inventario</h1>
+    <button onclick="document.getElementById('m').style.display='block'" style="width:auto; margin:0; padding: 8px 15px;">+ Nuevo</button>
 </div>
 
-<div class="table-container card" style="padding: 0;">
-    <table>
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in productos %}
-            <tr>
-                <td><b>{{ p.nombre }}</b><br><small style="color: var(--text-muted)">{{ p.unidad }}</small></td>
-                <td style="color: var(--success)">${{ p.precio }}</td>
-                <td><span class="badge {% if p.stock < 5 %}fiado{% else %}pagado{% endif %}">{{ p.stock }}</span></td>
-                <td>
-                    <button onclick="abrirEditar('{{ p.id }}', '{{ p.nombre }}', '{{ p.precio }}', '{{ p.stock }}', '{{ p.unidad }}', '{{ p.oferta }}')" 
-                            style="background: #475569; padding: 5px; width: 35px; margin: 0;">✏️</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% for p in productos %}
+<div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
+    <div>
+        <b style="font-size: 16px;">{{ p.nombre }}</b><br>
+        <small style="color: #94a3b8;">{{ p.unidad }} | ${{ p.precio }}</small>
+    </div>
+    <div style="text-align: right;">
+        <span class="badge">{{ p.stock }}</span>
+    </div>
 </div>
+{% endfor %}
 
-<!-- Los modales se mantienen igual pero ahora se verán mejor por el CSS del base.html -->
+<div id="m" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; padding:20px;">
+    <div class="card">
+        <h3>Nuevo Producto</h3>
+        <form action="/agregar_producto" method="POST">
+            <input type="text" name="nombre" placeholder="Nombre" required>
+            <input type="number" step="0.01" name="precio" placeholder="Precio">
+            <input type="number" name="stock" placeholder="Stock">
+            <select name="unidad"><option>Unidad</option><option>Kg</option></select>
+            <input type="text" name="oferta" placeholder="Oferta (Opcional)">
+            <button type="submit">Guardar</button>
+            <button type="button" onclick="document.getElementById('m').style.display='none'" style="background:#475569;">Cerrar</button>
+        </form>
+    </div>
+</div>
 {% endblock %}
