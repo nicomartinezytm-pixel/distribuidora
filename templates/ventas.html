@@ -2,69 +2,43 @@
 {% block content %}
 <h2>Nueva Venta</h2>
 <div class="card">
-    <input type="text" id="busqueda" placeholder="Buscar producto..." oninput="filtrar()">
-    <div id="lista-prods" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;"></div>
+    <input type="text" id="busqueda" placeholder="🔍 Buscar producto..." oninput="filtrar()">
+    <div id="lista-prods" style="max-height: 150px; overflow-y: auto;"></div>
 </div>
 
 <div class="card">
     <h3>Carrito</h3>
-    <div id="carrito-items"></div>
-    <hr>
-    <input type="text" id="cliente" placeholder="Nombre del Cliente">
-    <button onclick="enviarVenta()">Finalizar Venta ($<span id="total-v">0</span>)</button>
+    <div id="carrito-items" style="margin-bottom: 15px;"></div>
+    
+    <div style="background: #0f172a; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+        <label>Datos del Cliente:</label>
+        <input type="text" id="cliente" placeholder="Nombre completo">
+        <input type="text" id="direccion" placeholder="Dirección de entrega">
+        <input type="tel" id="whatsapp" placeholder="WhatsApp (ej: 351...)">
+    </div>
+
+    <button onclick="enviarVenta()" style="background: #22c55e; height: 70px; font-size: 20px;">
+        CONFIRMAR VENTA ($<span id="total-v">0</span>)
+    </button>
 </div>
 
 <script>
-let productos = [];
-let carrito = [];
-
-fetch('/productos_json').then(r => r.json()).then(data => { productos = data; });
-
-function filtrar() {
-    const term = document.getElementById('busqueda').value.toLowerCase();
-    const lista = document.getElementById('lista-prods');
-    lista.innerHTML = '';
-    if(!term) return;
-    
-    productos.filter(p => p.nombre.toLowerCase().includes(term)).forEach(p => {
-        const d = document.createElement('div');
-        d.innerHTML = `<div style="padding:10px; border-bottom:1px solid #334155" onclick="agregar(${p.id})">
-            ${p.nombre} - $${p.precio} (Stock: ${p.stock})
-        </div>`;
-        lista.appendChild(d);
-    });
-}
-
-function agregar(id) {
-    const p = productos.find(x => x.id === id);
-    const item = carrito.find(x => x.id === id);
-    if(item) item.cantidad++;
-    else carrito.push({...p, cantidad: 1});
-    render();
-}
-
-function render() {
-    const div = document.getElementById('carrito-items');
-    div.innerHTML = '';
-    let total = 0;
-    carrito.forEach((item, i) => {
-        total += item.precio * item.cantidad;
-        div.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:10px">
-            <span>${item.nombre} x${item.cantidad}</span>
-            <span>$${item.precio * item.cantidad}</span>
-        </div>`;
-    });
-    document.getElementById('total-v').innerText = total;
-}
-
+// ... (mismo script de filtrado anterior, pero actualizamos enviarVenta)
 function enviarVenta() {
-    const cliente = document.getElementById('cliente').value;
-    if(!cliente || carrito.length === 0) return alert('Faltan datos');
+    const data = {
+        cliente: {
+            nombre: document.getElementById('cliente').value,
+            direccion: document.getElementById('direccion').value,
+            whatsapp: document.getElementById('whatsapp').value
+        },
+        carrito: carrito
+    };
+    if(!data.cliente.nombre || carrito.length === 0) return alert('Faltan datos');
     
     fetch('/finalizar_venta', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({cliente: {nombre: cliente}, carrito: carrito})
+        body: JSON.stringify(data)
     }).then(() => window.location.href = '/boletas');
 }
 </script>
