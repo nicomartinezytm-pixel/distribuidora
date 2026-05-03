@@ -1,34 +1,106 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Boletas</title>
+    <title>Boletas PRO</title>
     <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+        table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:10px;
+            font-size:12px;
+        }
+
+        th, td{
+            padding:6px;
+            border-bottom:1px solid rgba(255,255,255,0.2);
+            text-align:left;
+        }
+
+        th{
+            color:#93c5fd;
+        }
+
+        .estado{
+            font-weight:bold;
+            margin-top:8px;
+            display:inline-block;
+        }
+
+        .pagado{ color: #22c55e; }
+        .parcial{ color: #f59e0b; }
+        .fiado{ color: #ef4444; }
+
+        .box{
+            background: rgba(255,255,255,0.05);
+            padding:10px;
+            border-radius:10px;
+            margin-top:10px;
+        }
+    </style>
 </head>
 
 <body>
 
 <h1>💳 Boletas (Ventas)</h1>
 
-<div class="nav">
-    <a href="/"><button>🏠 Volver</button></a>
-    <a href="/dashboard"><button>📊 Dashboard</button></a>
-</div>
-
 <div class="container">
 
-    {% for b in boletas %}
+{% for b in boletas %}
 
-        <div class="card">
+<div class="card">
 
-            <h3>🧾 Venta #{{b['id']}}</h3>
+    <h3>🧾 Venta #{{b['id']}}</h3>
 
-            <p>💰 Total: ${{b['total']}}</p>
+    👤 Cliente: {{b['cliente']}}<br>
+    📍 Dirección: {{b['direccion']}}<br>
+    📅 Fecha: {{b['fecha']}}<br>
 
-            <p>📅 Fecha: {{b['fecha']}}</p>
+    <div class="box">
 
-        </div>
+    <table>
+        <tr>
+            <th>Producto</th>
+            <th>Cant</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+        </tr>
 
-    {% endfor %}
+        {% for item in b['detalle'] | safe | fromjson %}
+
+        <tr>
+            <td>{{item['nombre']}}</td>
+            <td>{{item['cantidad']}}</td>
+            <td>${{item['precio']}}</td>
+            <td>${{item['subtotal']}}</td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    </div>
+
+    <div class="box">
+
+        💰 Total: <b>${{b['total']}}</b><br>
+        💵 Pagado: ${{b['pagado']}}<br>
+        ❗ Saldo: ${{b['saldo']}}<br>
+
+        {% if b['estado'] == 'pagado' %}
+            <span class="estado pagado">✔ PAGADO</span>
+        {% elif b['estado'] == 'parcial' %}
+            <span class="estado parcial">⚠ PARCIAL</span>
+        {% else %}
+            <span class="estado fiado">❌ F I A D O</span>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endfor %}
 
 </div>
 
