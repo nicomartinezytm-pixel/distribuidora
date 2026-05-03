@@ -1,21 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Distribuidora Pro</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-
-<body>
+{% extends "base.html" %}
+{% block content %}
 
 <h1>📦 Sistema Distribuidora Pro</h1>
-
-<!-- ================= NAV ================= -->
-<div class="nav">
-    <a href="/dashboard"><button>📊 Dashboard</button></a>
-    <a href="/vender"><button>🧾 Ventas</button></a>
-    <a href="/clientes"><button>👥 Clientes</button></a>
-    <a href="/boletas"><button>💳 Boletas</button></a>
-</div>
 
 <div class="container">
 
@@ -25,11 +11,11 @@
 
         <form method="POST" action="/agregar_producto">
 
-            <input name="nombre" placeholder="Nombre del producto">
-            <input name="precio" placeholder="Precio">
-            <input name="stock" placeholder="Stock inicial">
+            <input name="nombre" placeholder="Nombre del producto" required>
+            <input name="precio" placeholder="Precio" required>
+            <input name="stock" placeholder="Stock inicial" required>
 
-            <button>Guardar producto</button>
+            <button type="submit">Guardar producto</button>
 
         </form>
     </div>
@@ -40,38 +26,38 @@
 
         {% for p in productos %}
         <div class="card">
-            <b>{{p['nombre']}}</b><br>
-            💰 Precio: ${{p['precio']}}<br>
-            📦 Stock: {{p['stock']}}<br>
+            <b>{{ p['nombre'] }}</b><br>
+            💰 Precio: ${{ p['precio'] }}<br>
+            📦 Stock: {{ p['stock'] }}<br>
 
-            <a href="/eliminar_producto/{{p['id']}}">
+            <a href="/eliminar_producto/{{ p['id'] }}">
                 <button>❌ Eliminar</button>
             </a>
         </div>
         {% endfor %}
+
     </div>
 
-    <!-- ================= COMPRAS ================= -->
+    <!-- ================= COMPRAS MAYORISTAS ================= -->
     <div class="card">
-        <h2>🛒 Compras a Mayoristas</h2>
+        <h2>🛒 Compras Mayoristas</h2>
 
         <form method="POST" action="/agregar_compra">
 
-            <input name="producto" placeholder="Producto (ej: Alfajores)">
-            <input name="lugar" placeholder="Lugar de compra (ej: Carrefour)">
-            <input name="cantidad" placeholder="Cantidad comprada">
-            <input name="total" placeholder="Total pagado ($)">
+            <input name="producto" placeholder="Producto (ej: Alfajores)" required>
+            <input name="lugar" placeholder="Lugar de compra (ej: Carrefour)" required>
+            <input name="cantidad" placeholder="Cantidad comprada" required>
+            <input name="total" placeholder="Total pagado ($)" required>
 
-            <button>➕ Registrar compra</button>
+            <button type="submit">Registrar compra</button>
 
         </form>
 
-        <p style="margin-top:10px;">
-            📌 El sistema calcula automáticamente el precio unitario y suma stock.
+        <p style="margin-top:10px; font-size:13px;">
+            📌 El sistema calcula automáticamente el precio unitario y suma stock al producto si existe.
         </p>
     </div>
 
 </div>
 
-</body>
-</html>
+{% endblock %}
