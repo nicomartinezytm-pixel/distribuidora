@@ -4,14 +4,13 @@
     <title>Ventas PRO</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="/static/style.css">
-
     <style>
         body {
             margin: 0;
             font-family: Arial;
-            background: #f2f2f2;
+            background: #e9ecef;
             padding-bottom: 100px;
+            color: #111;
         }
 
         h1 {
@@ -20,61 +19,96 @@
         }
 
         .container {
-            padding: 15px;
+            padding: 12px;
         }
 
         .card {
             background: white;
             padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            margin-bottom: 12px;
+            border-radius: 14px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
         }
 
         input {
             width: 100%;
             padding: 10px;
-            margin: 5px 0;
+            margin: 6px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
         }
 
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #111;
-            color: white;
-            border: none;
-            margin-top: 10px;
-            border-radius: 8px;
+        .productos {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .producto {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px;
-            margin: 5px 0;
-            background: #f7f7f7;
+            padding: 12px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+
+        .producto b {
+            color: #111;
+        }
+
+        .producto button {
+            background: #198754;
+            border: none;
+            color: white;
+            padding: 8px 12px;
             border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .producto button:active {
+            transform: scale(0.95);
         }
 
         .carrito-item {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .carrito-item button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 6px;
         }
 
         .total-box {
-            font-size: 22px;
-            font-weight: bold;
-            text-align: center;
             margin-top: 10px;
-            padding: 10px;
-            background: #111;
+            padding: 12px;
+            background: #212529;
             color: white;
+            text-align: center;
+            font-size: 20px;
             border-radius: 10px;
         }
 
-        .back-btn {
+        .finalizar {
+            width: 100%;
+            padding: 12px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .back {
             position: fixed;
             top: 15px;
             left: 15px;
@@ -84,12 +118,13 @@
             border-radius: 50%;
             text-decoration: none;
         }
+
     </style>
 </head>
 
 <body>
 
-<a href="/" class="back-btn">←</a>
+<a href="/" class="back">←</a>
 
 <h1>🛒 Ventas PRO</h1>
 
@@ -106,7 +141,7 @@
 <!-- PRODUCTOS -->
 <div class="card">
     <h3>Productos</h3>
-    <div id="productos"></div>
+    <div class="productos" id="productos"></div>
 </div>
 
 <!-- CARRITO -->
@@ -114,12 +149,13 @@
     <h3>Carrito</h3>
     <div id="carrito"></div>
 
-    <!-- 🔥 TOTAL GRANDE CLARO -->
     <div class="total-box">
-        TOTAL A PAGAR: $<span id="total">0</span>
+        TOTAL: $<span id="total">0</span>
     </div>
 
-    <button onclick="finalizar()">FINALIZAR VENTA</button>
+    <button class="finalizar" onclick="finalizar()">
+        FINALIZAR VENTA
+    </button>
 </div>
 
 </div>
@@ -136,13 +172,17 @@ fetch("/productos_json")
     let cont = document.getElementById("productos");
 
     data.forEach(p => {
+
         cont.innerHTML += `
         <div class="producto">
             <div>
                 <b>${p.nombre}</b><br>
-                $${p.precio}
+                <small>$${p.precio}</small>
             </div>
-            <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio})">+</button>
+
+            <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio})">
+                AGREGAR
+            </button>
         </div>
         `;
     });
@@ -178,12 +218,11 @@ function render() {
         <div class="carrito-item">
             ${p.nombre} x${p.cantidad}
             <span>$${subtotal}</span>
-            <button onclick="quitar(${i})">❌</button>
+            <button onclick="quitar(${i})">X</button>
         </div>
         `;
     });
 
-    // 🔥 TOTAL EN TIEMPO REAL
     document.getElementById("total").innerText = total.toFixed(2);
 }
 
