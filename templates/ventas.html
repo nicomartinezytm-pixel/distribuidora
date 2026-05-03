@@ -2,94 +2,150 @@
 <html>
 <head>
     <title>Ventas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #f2f2f2;
+            padding-bottom: 80px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+        }
+
+        button {
+            padding: 10px;
+            width: 100%;
+            background: #111;
+            color: white;
+            border: none;
+            margin-top: 10px;
+        }
+
+        /* BOTÓN VOLVER */
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: #111;
+            color: white;
+            padding: 10px 12px;
+            border-radius: 50%;
+            text-decoration: none;
+            z-index: 9999;
+        }
+
+        /* BARRA INFERIOR */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background: #111;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .nav-item {
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            font-size: 12px;
+            flex: 1;
+        }
+
+        .nav-item span {
+            display: block;
+            font-size: 11px;
+        }
+    </style>
 </head>
+
 <body>
 
-<h1>🧾 Venta</h1>
+<!-- VOLVER -->
+<a href="/" class="back-btn">←</a>
 
-<div style="text-align:center;">
-    <a href="/"><button>⬅ Volver</button></a>
-</div>
+<h1>💰 Ventas</h1>
 
 <div class="container">
 
-<div class="card">
-<h3>Cliente</h3>
-<select id="cliente">
-{% for c in clientes %}
-<option value="{{c[0]}}">{{c[1]}}</option>
-{% endfor %}
-</select>
-</div>
+    <div class="card">
+        <h2>Nueva venta</h2>
 
-<div class="card">
-<h3>Productos</h3>
-<div id="productos">
-{% for p in productos %}
-<button onclick="add({{p[0]}}, '{{p[1]}}', {{p[2]}})">
-{{p[1]}}<br>$ {{p[2]}}
-</button>
-{% endfor %}
-</div>
-</div>
+        <form method="POST" action="/finalizar_venta">
 
-<div class="card">
-<h3>Carrito</h3>
-<ul id="carrito"></ul>
-<h2 id="total">Total: 0</h2>
-</div>
+            <label>Cliente:</label>
+            <select name="cliente" required>
+                {% for c in clientes %}
+                    <option value="{{ c[0] }}">
+                        {{ c[1] }} - {{ c[2] }}
+                    </option>
+                {% endfor %}
+            </select>
 
-<div class="card">
-<form method="POST" action="/finalizar_venta" onsubmit="prep()">
-<input type="hidden" name="cliente" id="c">
-<input type="hidden" name="total" id="t">
-<input type="hidden" name="carrito" id="car">
-<button style="width:100%; font-size:20px;">💰 Finalizar Venta</button>
-</form>
-</div>
+            <label>Total:</label>
+            <input name="total" type="number" step="0.01" required>
+
+            <!-- carrito oculto (lo usas con JS si ya lo tenías) -->
+            <input type="hidden" name="carrito" value="[]">
+
+            <button type="submit">Finalizar venta</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Productos disponibles</h2>
+
+        {% for p in productos %}
+            <p>📦 {{ p[1] }} - ${{ p[2] }} (Stock: {{ p[3] }})</p>
+        {% endfor %}
+    </div>
 
 </div>
 
-<script>
-let carrito=[]
-let total=0
+<!-- BARRA INFERIOR -->
+<div class="bottom-nav">
 
-function add(id,n,p){
-let c=prompt("Cantidad:",1)
-if(!c)return
-c=parseInt(c)
+    <a href="/" class="nav-item">
+        🏠<span>Inicio</span>
+    </a>
 
-carrito.push({id:id,nombre:n,precio:p,cantidad:c})
-total+=p*c
-render()
-}
+    <a href="/vender" class="nav-item">
+        💰<span>Vender</span>
+    </a>
 
-function render(){
-let ul=document.getElementById("carrito")
-ul.innerHTML=""
-carrito.forEach((i,index)=>{
-ul.innerHTML+=`
-<li>
-${i.nombre} x${i.cantidad} = $${i.precio*i.cantidad}
-<button onclick="removeItem(${index})">❌</button>
-</li>`
-})
-document.getElementById("total").innerText="Total: "+total
-}
+    <a href="/dashboard" class="nav-item">
+        📊<span>Stats</span>
+    </a>
 
-function removeItem(i){
-total-=carrito[i].precio*carrito[i].cantidad
-carrito.splice(i,1)
-render()
-}
-
-function prep(){
-document.getElementById("c").value=document.getElementById("cliente").value
-document.getElementById("t").value=total
-document.getElementById("car").value=JSON.stringify(carrito)
-}
-</script>
+</div>
 
 </body>
 </html>
