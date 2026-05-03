@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clientes</title>
+    <title>Clientes - ERP</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -11,15 +11,25 @@
 
 <div class="nav">
     <a href="/"><button>🏠 Inicio</button></a>
+    <a href="/dashboard"><button>📊 Dashboard</button></a>
 </div>
 
 <div class="container">
 
     {% for c in clientes %}
+
         <div class="card">
-            👤 {{c['nombre']}}<br>
-            💰 Compras: ${{c['total_comprado']}}
+
+            <h3>👤 {{c['nombre']}}</h3>
+
+            <p>💰 Total comprado:</p>
+
+            <h2>
+                ${{ c['total_comprado'] or 0 }}
+            </h2>
+
         </div>
+
     {% endfor %}
 
 </div>
