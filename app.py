@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, jsonify
 import sqlite3
 import json
 import os
@@ -90,8 +90,8 @@ def agregar_producto():
         VALUES (?, ?, ?, ?, ?)
     """, (
         request.form["nombre"],
-        request.form["precio"],
-        request.form["stock"],
+        float(request.form["precio"]),
+        int(request.form["stock"]),
         tipo,
         extra
     ))
@@ -120,8 +120,8 @@ def editar_producto(id):
         WHERE id=?
     """, (
         request.form["nombre"],
-        request.form["precio"],
-        request.form["stock"],
+        float(request.form["precio"]),
+        int(request.form["stock"]),
         request.form["tipo_precio"],
         id
     ))
@@ -131,23 +131,25 @@ def editar_producto(id):
     return redirect("/")
 
 
-# -------- CLIENTES --------
-@app.route("/agregar_cliente", methods=["POST"])
-def agregar_cliente():
+# -------- PRODUCTOS JSON (FIX CLAVE) --------
+@app.route("/productos_json")
+def productos_json():
     db = get_db()
-
-    db.execute("""
-        INSERT INTO clientes (nombre, telefono, direccion)
-        VALUES (?, ?, ?)
-    """, (
-        request.form["nombre"],
-        request.form["telefono"],
-        request.form["direccion"]
-    ))
-
-    db.commit()
+    productos = db.execute("SELECT * FROM productos").fetchall()
     db.close()
-    return redirect("/")
+
+    lista = []
+
+    for p in productos:
+        lista.append({
+            "id": p["id"],
+            "nombre": p["nombre"],
+            "precio": float(p["precio"]),
+            "stock": p["stock"],
+            "tipo_precio": p["tipo_precio"]
+        })
+
+    return jsonify(lista)
 
 
 # -------- VENTAS --------
@@ -162,9 +164,7 @@ def finalizar_venta():
 
     data = json.loads(request.form["data"])
 
-    nombre = data["cliente"]["nombre"]
-    telefono = data["cliente"]["telefono"]
-    direccion = data["cliente"]["direccion"]
+    cliente = data["cliente"]
     carrito = data["carrito"]
 
     cursor = db.cursor()
@@ -172,7 +172,11 @@ def finalizar_venta():
     cursor.execute("""
         INSERT INTO clientes (nombre, telefono, direccion)
         VALUES (?, ?, ?)
-    """, (nombre, telefono, direccion))
+    """, (
+        cliente["nombre"],
+        cliente["telefono"],
+        cliente["direccion"]
+    ))
 
     cliente_id = cursor.lastrowid
 
@@ -186,48 +190,31 @@ def finalizar_venta():
     total = 0
 
     for item in carrito:
+
         prod = db.execute("""
-            SELECT precio, tipo_precio, extra
-            FROM productos WHERE id=?
+            SELECT precio FROM productos WHERE id=?
         """, (item["id"],)).fetchone()
 
-        precio = prod["precio"]
-        tipo = prod["tipo_precio"]
-        extra = prod["extra"]
-
-        cantidad = item["cantidad"]
-
-        if tipo == "unidad":
-            subtotal = precio * cantidad
-
-        elif tipo == "cantidad":
-            subtotal = precio * cantidad * extra
-
-        elif tipo == "oferta":
-            subtotal = (precio * cantidad * extra) * 0.9
-
-        else:
-            subtotal = precio * cantidad
-
+        subtotal = prod["precio"] * item["cantidad"]
         total += subtotal
 
         db.execute("""
             INSERT INTO detalle_venta (venta_id, producto_id, cantidad)
             VALUES (?, ?, ?)
-        """, (venta_id, item["id"], cantidad))
+        """, (venta_id, item["id"], item["cantidad"]))
 
         db.execute("""
             UPDATE productos
             SET stock = stock - ?
             WHERE id = ?
-        """, (cantidad, item["id"]))
+        """, (item["cantidad"], item["id"]))
 
     db.execute("UPDATE ventas SET total=? WHERE id=?", (total, venta_id))
 
     db.commit()
     db.close()
 
-    return {"ok": True}
+    return jsonify({"ok": True})
 
 
 # -------- DASHBOARD --------
@@ -258,7 +245,7 @@ def dashboard():
                            totales=totales)
 
 
-# -------- GANANCIAS DEL DÍA --------
+# -------- GANANCIAS --------
 @app.route("/ganancias")
 def ganancias():
     db = get_db()
