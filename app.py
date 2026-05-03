@@ -14,7 +14,11 @@ def get_db():
 
 def init_db():
     db = get_db()
-    db.execute("CREATE TABLE IF NOT EXISTS productos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, precio REAL, stock INTEGER)")
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS productos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            nombre TEXT, precio REAL, stock INTEGER, unidad TEXT, oferta TEXT
+        )""")
     db.execute("CREATE TABLE IF NOT EXISTS compras (id INTEGER PRIMARY KEY AUTOINCREMENT, lugar TEXT, producto TEXT, cantidad INTEGER, total REAL, fecha TEXT DEFAULT (DATETIME('now','localtime')))")
     db.execute("CREATE TABLE IF NOT EXISTS ventas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, direccion TEXT, detalle TEXT, total REAL, pagado REAL DEFAULT 0, saldo REAL DEFAULT 0, estado TEXT DEFAULT 'fiado', fecha TEXT DEFAULT (DATETIME('now','localtime')))")
     db.commit()
@@ -25,22 +29,41 @@ init_db()
 @app.route("/")
 def index():
     db = get_db()
-    productos = db.execute("SELECT * FROM productos").fetchall()
+    productos = db.execute("SELECT * FROM productos ORDER BY nombre ASC").fetchall()
     db.close()
     return render_template("index.html", productos=productos)
 
 @app.route("/productos_json")
 def productos_json():
     db = get_db()
-    productos = db.execute("SELECT id, nombre, precio, stock FROM productos").fetchall()
+    productos = db.execute("SELECT id, nombre, precio, stock, unidad, oferta FROM productos").fetchall()
     db.close()
     return jsonify([dict(p) for p in productos])
 
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
-    db.execute("INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)", 
-               (request.form["nombre"], float(request.form["precio"]), int(request.form["stock"])))
+    db.execute("INSERT INTO productos (nombre, precio, stock, unidad, oferta) VALUES (?, ?, ?, ?, ?)", 
+               (request.form["nombre"], float(request.form["precio"]), int(request.form["stock"]), request.form.get("unidad", "Unidad"), request.form.get("oferta", "")))
+    db.commit()
+    db.close()
+    return redirect("/")
+
+@app.route("/editar_producto", methods=["POST"])
+def editar_producto():
+    db = get_db()
+    db.execute("""
+        UPDATE productos 
+        SET nombre=?, precio=?, stock=?, unidad=?, oferta=? 
+        WHERE id=?
+    """, (
+        request.form["nombre"], 
+        float(request.form["precio"]), 
+        int(request.form["stock"]),
+        request.form["unidad"],
+        request.form["oferta"],
+        int(request.form["id"])
+    ))
     db.commit()
     db.close()
     return redirect("/")
