@@ -10,121 +10,56 @@
             font-family: Arial;
             background: #e9ecef;
             padding-bottom: 100px;
-            color: #111;
         }
 
-        h1 {
-            text-align: center;
-            margin: 15px 0;
-        }
+        h1 { text-align: center; }
 
-        .container {
-            padding: 12px;
-        }
+        .container { padding: 12px; }
 
         .card {
             background: white;
             padding: 15px;
             margin-bottom: 12px;
             border-radius: 14px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
         }
 
         input {
             width: 100%;
             padding: 10px;
             margin: 6px 0;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-
-        .productos {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
         }
 
         .producto {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            border-radius: 10px;
+            padding: 10px;
             background: #f8f9fa;
-            border: 1px solid #ddd;
+            margin-bottom: 8px;
+            border-radius: 10px;
         }
 
-        .producto b {
-            color: #111;
-        }
-
-        .producto button {
+        button {
             background: #198754;
-            border: none;
             color: white;
-            padding: 8px 12px;
+            border: none;
+            padding: 8px 10px;
             border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
         }
 
-        .producto button:active {
-            transform: scale(0.95);
-        }
-
-        .carrito-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .carrito-item button {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
-        .total-box {
-            margin-top: 10px;
-            padding: 12px;
-            background: #212529;
-            color: white;
-            text-align: center;
-            font-size: 20px;
-            border-radius: 10px;
-        }
-
-        .finalizar {
-            width: 100%;
-            padding: 12px;
-            background: #0d6efd;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        .back {
-            position: fixed;
-            top: 15px;
-            left: 15px;
+        .total {
             background: #111;
             color: white;
             padding: 10px;
-            border-radius: 50%;
-            text-decoration: none;
+            text-align: center;
+            font-size: 18px;
+            border-radius: 10px;
         }
-
     </style>
 </head>
 
 <body>
 
-<a href="/" class="back">←</a>
+<a href="/">⬅ Volver</a>
 
 <h1>🛒 Ventas PRO</h1>
 
@@ -141,7 +76,7 @@
 <!-- PRODUCTOS -->
 <div class="card">
     <h3>Productos</h3>
-    <div class="productos" id="productos"></div>
+    <div id="productos"></div>
 </div>
 
 <!-- CARRITO -->
@@ -149,11 +84,11 @@
     <h3>Carrito</h3>
     <div id="carrito"></div>
 
-    <div class="total-box">
+    <div class="total">
         TOTAL: $<span id="total">0</span>
     </div>
 
-    <button class="finalizar" onclick="finalizar()">
+    <button onclick="finalizar()" style="width:100%; margin-top:10px;">
         FINALIZAR VENTA
     </button>
 </div>
@@ -164,7 +99,7 @@
 
 let carrito = [];
 
-// cargar productos
+// 🔥 ahora viene desde Flask correctamente
 fetch("/productos_json")
 .then(r => r.json())
 .then(data => {
@@ -172,16 +107,15 @@ fetch("/productos_json")
     let cont = document.getElementById("productos");
 
     data.forEach(p => {
-
         cont.innerHTML += `
         <div class="producto">
             <div>
                 <b>${p.nombre}</b><br>
-                <small>$${p.precio}</small>
+                $${p.precio}
             </div>
 
             <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio})">
-                AGREGAR
+                +
             </button>
         </div>
         `;
@@ -215,9 +149,8 @@ function render() {
         total += subtotal;
 
         cont.innerHTML += `
-        <div class="carrito-item">
-            ${p.nombre} x${p.cantidad}
-            <span>$${subtotal}</span>
+        <div>
+            ${p.nombre} x${p.cantidad} - $${subtotal}
             <button onclick="quitar(${i})">X</button>
         </div>
         `;
@@ -235,9 +168,9 @@ function finalizar() {
 
     let data = {
         cliente: {
-            nombre: document.getElementById("nombre").value,
-            telefono: document.getElementById("telefono").value,
-            direccion: document.getElementById("direccion").value
+            nombre: nombre.value,
+            telefono: telefono.value,
+            direccion: direccion.value
         },
         carrito: carrito
     };
