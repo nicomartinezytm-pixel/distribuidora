@@ -1,37 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dashboard Pro</title>
+    <title>Dashboard ERP</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<h1>📊 Dashboard Empresarial</h1>
+<h1>📊 Dashboard Empresa</h1>
 
-<div class="container">
+<div>
 
-<div class="card">
-    <h2>💰 Resumen</h2>
-    <p>Ventas: ${{ total_ventas }}</p>
-    <p>Compras: ${{ total_compras }}</p>
-    <p>Ganancia total: ${{ ganancia }}</p>
-</div>
+<h2>💰 General</h2>
+<p>Ventas: ${{ total_ventas }}</p>
+<p>Compras: ${{ total_compras }}</p>
+<p>Ganancia: ${{ ganancia }}</p>
+<p>Margen: {{ margen|round(2) }}%</p>
 
-<div class="card">
-    <h2>📅 Mensual</h2>
-    <p>Ventas mes: ${{ ventas_mes }}</p>
-    <p>Compras mes: ${{ compras_mes }}</p>
-    <h3>Ganancia mes: ${{ ganancia_mes }}</h3>
-</div>
-
-<div class="card">
-    <h2>📊 Ventas vs Compras</h2>
-    <canvas id="grafico"></canvas>
-</div>
+<h2>📅 Mensual</h2>
+<p>Ventas mes: ${{ ventas_mes }}</p>
+<p>Compras mes: ${{ compras_mes }}</p>
+<p>Ganancia mes: ${{ ganancia_mes }}</p>
 
 </div>
+
+<canvas id="grafico"></canvas>
 
 <script>
 new Chart(document.getElementById("grafico"), {
