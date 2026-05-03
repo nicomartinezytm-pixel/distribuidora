@@ -1,79 +1,57 @@
 <!DOCTYPE html>
 <html>
-<head> 
+<head>
     <title>Distribuidora Pro</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<h1>📦 Distribuidora Pro</h1>
+<h1>📦 Sistema Distribuidora Pro</h1>
 
+<!-- ================= NAV ================= -->
 <div class="nav">
-    <a href="/vender"><button>🧾 Ventas</button></a>
     <a href="/dashboard"><button>📊 Dashboard</button></a>
-    <a href="/boletas"><button>💳 Boletas</button></a>
+    <a href="/vender"><button>🧾 Ventas</button></a>
     <a href="/clientes"><button>👥 Clientes</button></a>
+    <a href="/boletas"><button>💳 Boletas</button></a>
 </div>
 
 <div class="container">
 
-    <!-- ========================= -->
-    <!-- ➕ PRODUCTOS -->
-    <!-- ========================= -->
-
+    <!-- ================= PRODUCTOS ================= -->
     <div class="card">
-        <h2>➕ Nuevo producto</h2>
+        <h2>➕ Nuevo Producto</h2>
 
         <form method="POST" action="/agregar_producto">
 
-            <input name="nombre" placeholder="Nombre">
+            <input name="nombre" placeholder="Nombre del producto">
             <input name="precio" placeholder="Precio">
-            <input name="stock" placeholder="Stock">
-
-            <select name="tipo_precio" id="tipo" onchange="mostrar()">
-                <option value="unidad">Unidad</option>
-                <option value="cantidad">Pack</option>
-                <option value="oferta">Oferta</option>
-            </select>
-
-            <div id="extra1" style="display:none;">
-                <input name="unidades" placeholder="Unidades pack">
-            </div>
-
-            <div id="extra2" style="display:none;">
-                <input name="oferta_unidades" placeholder="Ej: 3x2">
-            </div>
+            <input name="stock" placeholder="Stock inicial">
 
             <button>Guardar producto</button>
 
         </form>
     </div>
 
-    <!-- ========================= -->
-    <!-- 📦 PRODUCTOS -->
-    <!-- ========================= -->
-
+    <!-- ================= LISTA PRODUCTOS ================= -->
     <div class="card">
         <h2>📦 Productos</h2>
 
         {% for p in productos %}
-            <div class="card">
-                <b>{{p['nombre']}}</b><br>
-                💰 ${{p['precio']}}<br>
-                📦 Stock: {{p['stock']}}<br>
+        <div class="card">
+            <b>{{p['nombre']}}</b><br>
+            💰 Precio: ${{p['precio']}}<br>
+            📦 Stock: {{p['stock']}}<br>
 
-                <a href="/eliminar_producto/{{p['id']}}">
-                    <button>❌ borrar</button>
-                </a>
-            </div>
+            <a href="/eliminar_producto/{{p['id']}}">
+                <button>❌ Eliminar</button>
+            </a>
+        </div>
         {% endfor %}
     </div>
 
-    <!-- ========================= -->
-    <!-- 🛒 COMPRAS A MAYORISTAS -->
-    <!-- ========================= -->
-
+    <!-- ================= COMPRAS ================= -->
     <div class="card">
         <h2>🛒 Compras a Mayoristas</h2>
 
@@ -81,36 +59,20 @@
 
             <input name="producto" placeholder="Producto (ej: Alfajores)">
             <input name="proveedor" placeholder="Proveedor">
-            <input name="lugar" placeholder="Lugar (ej: Carrefour)">
+            <input name="lugar" placeholder="Lugar (Carrefour, mayorista...)">
             <input name="cantidad" placeholder="Cantidad">
             <input name="precio" placeholder="Precio unitario">
 
-            <button>➕ Guardar compra</button>
+            <button>➕ Registrar compra</button>
 
         </form>
 
         <p style="margin-top:10px;">
-            📌 Las compras quedan guardadas en la base de datos automáticamente.
+            📌 Esta compra suma automáticamente stock al producto.
         </p>
     </div>
 
 </div>
-
-<script>
-function mostrar(){
-    let t = document.getElementById("tipo").value;
-
-    document.getElementById("extra1").style.display = "none";
-    document.getElementById("extra2").style.display = "none";
-
-    if(t=="cantidad"){
-        document.getElementById("extra1").style.display = "block";
-    }
-    if(t=="oferta"){
-        document.getElementById("extra2").style.display = "block";
-    }
-}
-</script>
 
 </body>
 </html>
