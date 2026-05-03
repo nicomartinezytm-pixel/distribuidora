@@ -75,16 +75,7 @@ def index():
     return render_template("index.html", productos=productos)
 
 
-# ---------------- PRODUCTOS JSON ----------------
-@app.route("/productos_json")
-def productos_json():
-    db = get_db()
-    productos = db.execute("SELECT * FROM productos").fetchall()
-    db.close()
-    return jsonify([dict(p) for p in productos])
-
-
-# ---------------- AGREGAR PRODUCTO (COMPLETO) ----------------
+# ---------------- PRODUCTOS ----------------
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
@@ -97,7 +88,6 @@ def agregar_producto():
     unidades = 1
     oferta_unidades = 1
 
-    # 🔥 lógica real
     if tipo == "cantidad":
         unidades = int(request.form.get("unidades") or 1)
 
@@ -107,47 +97,17 @@ def agregar_producto():
     db.execute("""
         INSERT INTO productos (nombre, precio, stock, tipo_precio, unidades, oferta_unidades)
         VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        nombre,
-        precio,
-        stock,
-        tipo,
-        unidades,
-        oferta_unidades
-    ))
+    """, (nombre, precio, stock, tipo, unidades, oferta_unidades))
 
     db.commit()
     db.close()
     return redirect("/")
 
 
-# ---------------- ELIMINAR ----------------
 @app.route("/eliminar_producto/<int:id>")
 def eliminar_producto(id):
     db = get_db()
     db.execute("DELETE FROM productos WHERE id=?", (id,))
-    db.commit()
-    db.close()
-    return redirect("/")
-
-
-# ---------------- EDITAR ----------------
-@app.route("/editar_producto/<int:id>", methods=["POST"])
-def editar_producto(id):
-    db = get_db()
-
-    db.execute("""
-        UPDATE productos
-        SET nombre=?, precio=?, stock=?, tipo_precio=?
-        WHERE id=?
-    """, (
-        request.form["nombre"],
-        float(request.form["precio"]),
-        int(request.form["stock"]),
-        request.form["tipo_precio"],
-        id
-    ))
-
     db.commit()
     db.close()
     return redirect("/")
@@ -169,6 +129,7 @@ def finalizar_venta():
 
     cursor = db.cursor()
 
+    # crear cliente SIEMPRE
     cursor.execute("""
         INSERT INTO clientes (nombre, telefono, direccion)
         VALUES (?, ?, ?)
@@ -189,6 +150,7 @@ def finalizar_venta():
             WHERE id=?
         """, (item["cantidad"], item["id"]))
 
+    # 🔥 esto alimenta la cuenta corriente
     db.execute("""
         INSERT INTO ventas (cliente_id, total)
         VALUES (?, ?)
@@ -200,53 +162,32 @@ def finalizar_venta():
     return jsonify({"ok": True})
 
 
-# ---------------- BOLETAS ----------------
-@app.route("/boletas")
-def boletas():
+# ---------------- CUENTA CORRIENTE CLIENTES ----------------
+@app.route("/clientes")
+def clientes():
     db = get_db()
 
-    boletas = db.execute("""
-        SELECT boletas.*, clientes.nombre
-        FROM boletas
-        JOIN clientes ON clientes.id = boletas.cliente_id
-        ORDER BY boletas.id DESC
+    clientes = db.execute("""
+        SELECT c.id, c.nombre,
+        COALESCE(SUM(v.total), 0) as total_comprado
+        FROM clientes c
+        LEFT JOIN ventas v ON v.cliente_id = c.id
+        GROUP BY c.id
     """).fetchall()
 
-    alertas = db.execute("""
-        SELECT clientes.nombre, COUNT(*) as atrasos
-        FROM boletas
-        JOIN clientes ON clientes.id = boletas.cliente_id
-        WHERE boletas.estado='pendiente'
-        GROUP BY clientes.id
-        HAVING atrasos >= 3
+    deudas = db.execute("""
+        SELECT c.nombre,
+        SUM(b.total - b.pagado) as deuda
+        FROM boletas b
+        JOIN clientes c ON c.id = b.cliente_id
+        WHERE b.estado='pendiente'
+        GROUP BY c.id
+        ORDER BY deuda DESC
     """).fetchall()
 
     db.close()
 
-    return render_template("boletas.html", boletas=boletas, alertas=alertas)
-
-
-@app.route("/pagar_boleta/<int:id>", methods=["POST"])
-def pagar_boleta(id):
-    db = get_db()
-
-    pago = float(request.form["pagado"])
-
-    boleta = db.execute("SELECT * FROM boletas WHERE id=?", (id,)).fetchone()
-
-    nuevo_pagado = boleta["pagado"] + pago
-    estado = "pagado" if nuevo_pagado >= boleta["total"] else "pendiente"
-
-    db.execute("""
-        UPDATE boletas
-        SET pagado=?, estado=?
-        WHERE id=?
-    """, (nuevo_pagado, estado, id))
-
-    db.commit()
-    db.close()
-
-    return redirect("/boletas")
+    return render_template("clientes.html", clientes=clientes, deudas=deudas)
 
 
 # ---------------- DASHBOARD ----------------
@@ -257,25 +198,21 @@ def dashboard():
     total = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
     ventas = db.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
 
-    boletas_pendientes = db.execute("""
-        SELECT COUNT(*) FROM boletas WHERE estado='pendiente'
-    """).fetchone()[0]
-
-    deuda_total = db.execute("""
-        SELECT SUM(total - pagado)
-        FROM boletas
-        WHERE estado='pendiente'
-    """).fetchone()[0] or 0
+    ranking = db.execute("""
+        SELECT clientes.nombre, SUM(ventas.total) as total
+        FROM ventas
+        JOIN clientes ON clientes.id = ventas.cliente_id
+        GROUP BY clientes.id
+        ORDER BY total DESC
+        LIMIT 5
+    """).fetchall()
 
     db.close()
 
-    return render_template(
-        "dashboard.html",
-        total=total,
-        ventas=ventas,
-        boletas_pendientes=boletas_pendientes,
-        deuda_total=deuda_total
-    )
+    return render_template("dashboard.html",
+                           total=total,
+                           ventas=ventas,
+                           ranking=ranking)
 
 
 # ---------------- RUN ----------------
