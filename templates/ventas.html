@@ -1,97 +1,33 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Ventas PRO</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial;
-            background: #e9ecef;
-            padding-bottom: 100px;
-        }
-
-        h1 { text-align: center; }
-
-        .container { padding: 12px; }
-
-        .card {
-            background: white;
-            padding: 15px;
-            margin-bottom: 12px;
-            border-radius: 14px;
-        }
-
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 6px 0;
-        }
-
-        .producto {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            background: #f8f9fa;
-            margin-bottom: 8px;
-            border-radius: 10px;
-        }
-
-        button {
-            background: #198754;
-            color: white;
-            border: none;
-            padding: 8px 10px;
-            border-radius: 8px;
-        }
-
-        .total {
-            background: #111;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            font-size: 18px;
-            border-radius: 10px;
-        }
-    </style>
-</head>
-
-<body>
-
-<a href="/">⬅ Volver</a>
-
-<h1>🛒 Ventas PRO</h1>
+{% extends "base.html" %}
+{% block content %}
 
 <div class="container">
 
-<!-- CLIENTE -->
-<div class="card">
-    <h3>Cliente</h3>
-    <input id="nombre" placeholder="Nombre">
-    <input id="telefono" placeholder="Teléfono">
-    <input id="direccion" placeholder="Dirección">
-</div>
+    <h1>🧾 Ventas</h1>
 
-<!-- PRODUCTOS -->
-<div class="card">
-    <h3>Productos</h3>
-    <div id="productos"></div>
-</div>
+    <!-- CLIENTE -->
+    <div class="card">
+        <h3>👤 Cliente</h3>
 
-<!-- CARRITO -->
-<div class="card">
-    <h3>Carrito</h3>
-    <div id="carrito"></div>
-
-    <div class="total">
-        TOTAL: $<span id="total">0</span>
+        <input id="nombre" placeholder="Nombre">
+        <input id="direccion" placeholder="Dirección">
     </div>
 
-    <button onclick="finalizar()" style="width:100%; margin-top:10px;">
-        FINALIZAR VENTA
-    </button>
-</div>
+    <!-- PRODUCTOS -->
+    <div class="card">
+        <h3>📦 Productos</h3>
+        <div id="productos"></div>
+    </div>
+
+    <!-- CARRITO -->
+    <div class="card">
+        <h3>🛒 Carrito</h3>
+        <div id="carrito"></div>
+
+        <h3>Total: $<span id="total">0</span></h3>
+
+        <button onclick="finalizar()">FINALIZAR VENTA</button>
+    </div>
 
 </div>
 
@@ -99,26 +35,23 @@
 
 let carrito = [];
 
-// 🔥 ahora viene desde Flask correctamente
+// cargar productos
 fetch("/productos_json")
 .then(r => r.json())
 .then(data => {
 
-    let cont = document.getElementById("productos");
+    let div = document.getElementById("productos");
 
     data.forEach(p => {
-        cont.innerHTML += `
-        <div class="producto">
-            <div>
-                <b>${p.nombre}</b><br>
-                $${p.precio}
-            </div>
+        div.innerHTML += `
+        <div class="card">
+            <b>${p.nombre}</b><br>
+            💰 $${p.precio}<br>
 
             <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio})">
-                +
+                Agregar
             </button>
-        </div>
-        `;
+        </div>`;
     });
 
 });
@@ -130,7 +63,12 @@ function agregar(id, nombre, precio) {
     if (item) {
         item.cantidad++;
     } else {
-        carrito.push({id, nombre, precio, cantidad: 1});
+        carrito.push({
+            id,
+            nombre,
+            precio,
+            cantidad: 1
+        });
     }
 
     render();
@@ -138,8 +76,8 @@ function agregar(id, nombre, precio) {
 
 function render() {
 
-    let cont = document.getElementById("carrito");
-    cont.innerHTML = "";
+    let div = document.getElementById("carrito");
+    div.innerHTML = "";
 
     let total = 0;
 
@@ -148,15 +86,14 @@ function render() {
         let subtotal = p.precio * p.cantidad;
         total += subtotal;
 
-        cont.innerHTML += `
-        <div>
+        div.innerHTML += `
+        <div class="card">
             ${p.nombre} x${p.cantidad} - $${subtotal}
             <button onclick="quitar(${i})">X</button>
-        </div>
-        `;
+        </div>`;
     });
 
-    document.getElementById("total").innerText = total.toFixed(2);
+    document.getElementById("total").innerText = total;
 }
 
 function quitar(i) {
@@ -166,21 +103,16 @@ function quitar(i) {
 
 function finalizar() {
 
-    let data = {
-        cliente: {
-            nombre: nombre.value,
-            telefono: telefono.value,
-            direccion: direccion.value
-        },
-        carrito: carrito
-    };
-
     fetch("/finalizar_venta", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: "data=" + encodeURIComponent(JSON.stringify(data))
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: "data=" + encodeURIComponent(JSON.stringify({
+            cliente: {
+                nombre: document.getElementById("nombre").value,
+                direccion: document.getElementById("direccion").value
+            },
+            carrito: carrito
+        }))
     })
     .then(r => r.json())
     .then(res => {
@@ -192,5 +124,4 @@ function finalizar() {
 
 </script>
 
-</body>
-</html>
+{% endblock %}
