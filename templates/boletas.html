@@ -29,7 +29,6 @@
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1; padding: 12px; font-weight: bold;">💰 Pagar</button>
         
-        <!-- EL BOTÓN MÁGICO DE WHATSAPP -->
         <button onclick="enviarWhatsApp('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" 
                 style="flex:1; background:#22c55e; border:none; color:white; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer;">
             📲 WhatsApp
@@ -37,16 +36,16 @@
     </div>
 </div>
 
-<!-- Modal para registrar pago (No se toca) -->
+<!-- Modal Pago -->
 <div id="m-{{v.id}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
     <div class="card" style="margin:20% auto; width: 85%; background:#1e293b; padding: 25px;">
-        <h3>Registrar entrega de dinero</h3>
+        <h3>Registrar entrega</h3>
         <form action="/registrar_pago" method="POST">
             <input type="hidden" name="id" value="{{ v.id }}">
             <p>Cliente: <b>{{ v.cliente }}</b></p>
             <input type="number" step="0.01" name="monto" placeholder="¿Cuánto pagó?" required 
                    style="width:100%; padding: 12px; margin-bottom:15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white;">
-            <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar Pago</button>
+            <button type="submit" style="width:100%; background:#3b82f6; padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold;">Confirmar</button>
             <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" 
                     style="width:100%; background:transparent; border:none; color:#94a3b8; margin-top:15px;">Cerrar</button>
         </form>
@@ -56,45 +55,32 @@
 
 <script>
 function enviarWhatsApp(telefono, nombre, saldo) {
-    // 1. Limpieza total: solo números
+    // 1. Limpieza estricta
     let num = telefono.replace(/\D/g, '');
     
-    // 2. Si el usuario escribió el número con 15 (ej: 35115...), se lo quitamos 
-    // porque para WhatsApp internacional NO va el 15.
-    if (num.length === 12 && num.substring(2, 4) === '15') {
-        num = num.substring(0, 2) + num.substring(4);
-    }
-    if (num.length === 11 && num.startsWith('15')) {
-        num = num.substring(2);
-    }
-
-    // 3. Asegurar código de país (Argentina 54) y el '9' para móviles
-    // Si tiene 10 dígitos (ej: 3512345678)
+    // 2. Formateo para Argentina (54 + 9 + número sin 15)
     if (num.length === 10) {
         num = "549" + num;
-    } 
-    // Si tiene 11 dígitos y empieza con 9 (ej: 93512345678)
-    else if (num.length === 11 && num.startsWith('9')) {
-        num = "54" + num;
-    }
-    // Si ya tiene el 54 pero le falta el 9
-    else if (num.startsWith('54') && !num.startsWith('549')) {
-        num = "549" + num.substring(2);
+    } else if (num.startsWith('54') && num.length === 12 && num.charAt(2) !== '9') {
+        num = '549' + num.substring(2);
+    } else if (num.length > 0 && !num.startsWith('54')) {
+        num = "549" + num;
     }
 
-    if (num.length < 10) {
-        alert("El número parece corto. Asegurate de poner el código de área (ej: 351...)");
-        return;
+    let msj = encodeURIComponent(`Hola ${nombre}! Te escribo para recordarte el saldo pendiente de $${saldo}. Muchas gracias!`);
+    
+    // 3. LA SOLUCIÓN AL ERR_UNKNOWN_URL_SCHEME:
+    // En lugar de wa.me, usamos la URL completa de la API que es más "amigable" para los navegadores
+    let url = `https://api.whatsapp.com/send?phone=${num}&text=${msj}`;
+    
+    // Intentamos abrirlo de una forma que el navegador no bloquee
+    const win = window.open(url, '_blank');
+    if (win) {
+        win.focus();
+    } else {
+        // Si el navegador bloquea la ventana emergente, usamos la misma ventana como último recurso
+        location.href = url;
     }
-
-    let msj = `Hola ${nombre}! Te escribo para recordarte el saldo pendiente de $${saldo}. Muchas gracias!`;
-    
-    // 4. EL TRUCO FINAL: Usamos un link directo que fuerza la apertura de la app
-    // Si estás en PC abre Web, si estás en celular abre la App.
-    let link = "https://wa.me/" + num + "?text=" + encodeURIComponent(msj);
-    
-    console.log("Enviando a:", num); // Para que puedas ver en la consola si hay error
-    window.open(link, '_blank').focus();
 }
 </script>
 {% endblock %}
