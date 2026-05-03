@@ -3,56 +3,121 @@
 
 <style>
     .search-box { position: relative; margin-bottom: 20px; }
-    .results { position: absolute; background: #1e293b; width: 100%; border-radius: 8px; z-index: 10; border: 1px solid #334155; max-height: 200px; overflow-y: auto; }
-    .item-res { padding: 10px; cursor: pointer; border-bottom: 1px solid #334155; }
+    .results { 
+        position: absolute; 
+        background: #1e293b; 
+        width: 100%; 
+        border-radius: 8px; 
+        z-index: 10; 
+        border: 1px solid #334155; 
+        max-height: 250px; 
+        overflow-y: auto; 
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+    .item-res { 
+        padding: 12px; 
+        cursor: pointer; 
+        border-bottom: 1px solid #334155; 
+        display: flex;
+        justify-content: space-between;
+    }
     .item-res:hover { background: #334155; }
-    .cart-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
-    .tag-oferta-mini { font-size: 10px; background: #f59e0b; color: black; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
+    .cart-item { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        background: rgba(255,255,255,0.05); 
+        padding: 12px; 
+        border-radius: 8px; 
+        margin-bottom: 10px; 
+        border-left: 4px solid #3b82f6;
+    }
+    .tag-oferta-mini { 
+        font-size: 10px; 
+        background: #f59e0b; 
+        color: black; 
+        padding: 2px 6px; 
+        border-radius: 4px; 
+        font-weight: bold;
+    }
+    .input-cliente { margin-bottom: 10px; }
 </style>
 
-<h1>🛒 Nueva Venta</h1>
+<h1>🛒 Nueva Venta / Pedido</h1>
 
+<!-- FICHA DEL CLIENTE -->
 <div class="card">
-    <input type="text" id="clienteNom" placeholder="Nombre del Cliente" required>
-    <input type="text" id="clienteDir" placeholder="Dirección">
+    <h3>Datos del Cliente</h3>
+    <div class="input-cliente">
+        <input type="text" id="clienteNom" placeholder="Nombre del Cliente" required>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <input type="text" id="clienteDir" placeholder="Dirección / Localidad" style="flex: 2;">
+        <input type="text" id="clienteTel" placeholder="WhatsApp (ej: 549351...)" style="flex: 1.5;">
+    </div>
 </div>
 
-<div class="search-box">
-    <input type="text" id="buscador" placeholder="🔍 Buscar producto por nombre..." onkeyup="buscar()">
+<!-- BUSCADOR DE PRODUCTOS -->
+<div class="search-box" style="margin-top: 20px;">
+    <label>Buscar Productos:</label>
+    <input type="text" id="buscador" placeholder="🔍 Escribe el nombre del producto..." onkeyup="buscar()">
     <div id="listaResultados" class="results"></div>
 </div>
 
-<div id="carrito" style="margin-top: 20px;">
-    <h3>Detalle del Pedido</h3>
-    <div id="itemsCarrito"></div>
-    <hr style="opacity: 0.1;">
-    <h2 style="text-align: right;">Total: $<span id="totalVenta">0</span></h2>
+<!-- CARRITO DE COMPRAS -->
+<div id="carrito" style="margin-top: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Detalle del Pedido</h3>
+        <button onclick="vaciarCarrito()" style="background: transparent; color: #ef4444; border: none; cursor: pointer; font-size: 12px;">🗑️ Vaciar todo</button>
+    </div>
     
-    <button onclick="finalizarVenta()" style="background: #22c55e; width: 100%; font-size: 18px; margin-top: 10px;">
-        🚀 Confirmar Pedido (Fiado)
-    </button>
+    <div id="itemsCarrito" style="margin-top: 15px;">
+        <!-- Se llena con JS -->
+        <p style="color: #64748b; text-align: center;">El carrito está vacío</p>
+    </div>
+
+    <div class="card" style="margin-top: 20px; border-top: 2px solid #3b82f6;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;">Total a Cobrar:</h2>
+            <h1 style="margin: 0; color: #22c55e;">$<span id="totalVenta">0</span></h1>
+        </div>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">* El pedido se guardará como <b>Fiado</b>. Podrás registrar el pago en la sección de Boletas.</p>
+        <button onclick="finalizarVenta()" id="btnFinalizar" style="background: #22c55e; width: 100%; font-size: 18px; margin-top: 15px; padding: 15px;">
+            🚀 Confirmar y Guardar Pedido
+        </button>
+    </div>
 </div>
 
 <script>
 let productos = [];
 let carrito = [];
 
+// Cargar productos desde el servidor al iniciar
 async function cargarProds() {
-    const res = await fetch('/productos_json');
-    productos = await res.json();
+    try {
+        const res = await fetch('/productos_json');
+        productos = await res.json();
+    } catch (e) {
+        console.error("Error cargando productos", e);
+    }
 }
 
 function buscar() {
     const term = document.getElementById('buscador').value.toLowerCase();
     const resDiv = document.getElementById('listaResultados');
     resDiv.innerHTML = '';
-    if(!term) return;
+    
+    if(!term || term.length < 2) return;
 
     const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(term));
+    
     filtrados.forEach(p => {
         const div = document.createElement('div');
         div.className = 'item-res';
-        div.innerHTML = `<b>${p.nombre}</b> - $${p.precio} <small>(${p.unidad})</small>`;
+        div.innerHTML = `
+            <span><b>${p.nombre}</b> <small>(${p.unidad})</small></span>
+            <b style="color: #22c55e;">$${p.precio}</b>
+        `;
         div.onclick = () => agregarAlCarrito(p);
         resDiv.appendChild(div);
     });
@@ -74,52 +139,99 @@ function cambiarCant(id, delta) {
     const item = carrito.find(i => i.id === id);
     if(item) {
         item.cantidad += delta;
-        if(item.cantidad <= 0) carrito = carrito.filter(i => i.id !== id);
+        if(item.cantidad <= 0) {
+            carrito = carrito.filter(i => i.id !== id);
+        }
     }
     renderCarrito();
 }
 
+function vaciarCarrito() {
+    if(confirm("¿Vaciar el pedido actual?")) {
+        carrito = [];
+        renderCarrito();
+    }
+}
+
 function renderCarrito() {
     const div = document.getElementById('itemsCarrito');
+    const totalSpan = document.getElementById('totalVenta');
+    
+    if(carrito.length === 0) {
+        div.innerHTML = '<p style="color: #64748b; text-align: center;">El carrito está vacío</p>';
+        totalSpan.innerText = '0';
+        return;
+    }
+
     div.innerHTML = '';
     let total = 0;
+    
     carrito.forEach(item => {
         const sub = item.precio * item.cantidad;
         total += sub;
         div.innerHTML += `
             <div class="cart-item">
-                <div>
-                    <b>${item.nombre}</b> <br>
-                    <small>$${item.precio} x ${item.cantidad}</small>
-                    ${item.oferta ? `<span class="tag-oferta-mini">${item.oferta}</span>` : ''}
+                <div style="flex: 2;">
+                    <b style="font-size: 16px;">${item.nombre}</b> ${item.oferta ? `<span class="tag-oferta-mini">${item.oferta}</span>` : ''}<br>
+                    <small style="color: #94a3b8;">$${item.precio} x unid.</small>
                 </div>
-                <div>
-                    <button onclick="cambiarCant(${item.id}, -1)">-</button>
-                    <span style="margin: 0 10px;">${item.cantidad}</span>
-                    <button onclick="cambiarCant(${item.id}, 1)">+</button>
-                    <b style="margin-left:15px;">$${sub}</b>
+                <div style="display: flex; align-items: center; gap: 10px; flex: 1; justify-content: center;">
+                    <button onclick="cambiarCant(${item.id}, -1)" style="padding: 5px 10px;">-</button>
+                    <b style="min-width: 20px; text-align: center;">${item.cantidad}</b>
+                    <button onclick="cambiarCant(${item.id}, 1)" style="padding: 5px 10px;">+</button>
+                </div>
+                <div style="flex: 1; text-align: right;">
+                    <b style="color: #22c55e;">$${sub.toFixed(2)}</b>
                 </div>
             </div>`;
     });
-    document.getElementById('totalVenta').innerText = total;
+    totalSpan.innerText = total.toFixed(2);
 }
 
 async function finalizarVenta() {
-    const cliente = {
-        nombre: document.getElementById('clienteNom').value,
-        direccion: document.getElementById('clienteDir').value
-    };
-    if(!cliente.nombre || carrito.length === 0) return alert("Faltan datos");
+    const nombre = document.getElementById('clienteNom').value;
+    const direccion = document.getElementById('clienteDir').value;
+    const telefono = document.getElementById('clienteTel').value;
 
+    if(!nombre) {
+        alert("Por favor, ingresa al menos el nombre del cliente.");
+        return;
+    }
+    if(carrito.length === 0) {
+        alert("El carrito está vacío.");
+        return;
+    }
+
+    // Bloquear botón para evitar doble click
+    const btn = document.getElementById('btnFinalizar');
+    btn.disabled = true;
+    btn.innerText = "Guardando...";
+
+    const cliente = { nombre, direccion, telefono };
     const formData = new FormData();
     formData.append('data', JSON.stringify({cliente, carrito}));
 
-    const res = await fetch('/finalizar_venta', { method: 'POST', body: formData });
-    if(res.ok) {
-        alert("Pedido cargado con éxito");
-        window.location.href = "/boletas";
+    try {
+        const res = await fetch('/finalizar_venta', {
+            method: 'POST',
+            body: formData
+        });
+
+        if(res.ok) {
+            alert("✅ Venta registrada correctamente.");
+            window.location.href = "/boletas";
+        } else {
+            alert("Error al guardar la venta.");
+            btn.disabled = false;
+            btn.innerText = "🚀 Confirmar y Guardar Pedido";
+        }
+    } catch (e) {
+        alert("Error de conexión.");
+        btn.disabled = false;
     }
 }
+
+// Iniciar carga de datos
 cargarProds();
 </script>
 
