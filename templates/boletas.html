@@ -2,133 +2,83 @@
 {% block content %}
 
 <style>
-    .boleta-papel {
-        background: white;
-        color: #1e293b; /* Texto oscuro para legibilidad tipo papel */
-        border-radius: 4px;
-        padding: 20px;
-        margin-bottom: 25px;
-        border-top: 8px solid #3b82f6;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-    }
-    .header-boleta {
-        border-bottom: 2px dashed #cbd5e1;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-    }
-    .tabla-excel {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-        margin: 15px 0;
-    }
-    .tabla-excel th {
-        background: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        padding: 8px;
-        text-align: left;
-    }
-    .tabla-excel td {
-        border: 1px solid #cbd5e1;
-        padding: 8px;
-    }
-    .footer-boleta {
-        background: #f8fafc;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-    }
-    .input-cobro {
-        width: 100px !important;
-        display: inline-block !important;
-        margin: 0 !important;
-        padding: 5px !important;
-        color: black !important;
-        background: white !important;
-        border: 1px solid #3b82f6 !important;
-    }
-    .btn-cobrar {
-        width: auto !important;
-        padding: 6px 15px !important;
-        font-size: 12px !important;
-        display: inline-block !important;
-    }
+    .estado { padding: 4px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+    .estado-pagado { background: #dcfce7; color: #166534; }
+    .estado-parcial { background: #fef3c7; color: #92400e; }
+    .estado-fiado { background: #fee2e2; color: #991b1b; }
+    .modal-pago { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
 </style>
 
-<h1>🧾 Historial de Comprobantes</h1>
+<h1>📄 Boletas y Cobranzas</h1>
 
 <div class="container">
     {% for b in boletas %}
-    <div class="boleta-papel">
-        <!-- Encabezado -->
-        <div class="header-boleta">
-            <div style="display: flex; justify-content: space-between;">
-                <b style="font-size: 18px;">BOLETA #{{ b['id'] }}</b>
-                <span style="color: #64748b;">{{ b['fecha'] }}</span>
+    <div class="card">
+        <div style="display: flex; justify-content: space-between;">
+            <div>
+                <h3>{{ b['cliente'] }}</h3>
+                <small>{{ b['fecha'] }}</small>
             </div>
-            <p style="margin: 5px 0;">👤 <b>Cliente:</b> {{ b['cliente'] }}</p>
-            <p style="margin: 5px 0;">📍 <b>Dir:</b> {{ b['direccion'] }}</p>
-        </div>
-
-        <!-- Tabla estilo Excel -->
-        <table class="tabla-excel">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cant.</th>
-                    <th>Precio</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in b['detalle'] | fromjson %}
-                <tr>
-                    <td>{{ item['nombre'] }}</td>
-                    <td>{{ item['cantidad'] }}</td>
-                    <td>${{ item['precio'] }}</td>
-                    <td>${{ item['subtotal'] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <!-- Resumen de Pagos -->
-        <div class="footer-boleta">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span>Total a Pagar:</span>
-                <b style="font-size: 20px;">${{ b['total'] }}</b>
-            </div>
-            <div style="display: flex; justify-content: space-between; color: #16a34a;">
-                <span>Monto Pagado:</span>
-                <b>${{ b['pagado'] }}</b>
-            </div>
-            <div style="display: flex; justify-content: space-between; color: #dc2626; border-top: 1px solid #ddd; margin-top: 5px; padding-top: 5px;">
-                <span>Saldo Pendiente (Deuda):</span>
-                <b style="font-size: 18px;">${{ b['saldo'] }}</b>
-            </div>
-
-            <!-- Formulario para ingresar nuevo pago -->
-            {% if b['saldo'] > 0 %}
-            <form action="/pagar_boleta/{{ b['id'] }}" method="POST" style="margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
-                <label style="font-size: 12px; display: block; margin-bottom: 5px;">Abonar a la deuda:</label>
-                <input type="number" name="monto" class="input-cobro" step="0.01" placeholder="$ 0.00" required>
-                <button type="submit" class="btn-cobrar">Registrar Pago</button>
-            </form>
-            {% else %}
-            <div style="text-align: center; margin-top: 15px; color: #16a34a; font-weight: bold;">
-                ✅ BOLETA TOTALMENTE PAGADA
-            </div>
-            {% endif %}
+            <span class="estado estado-{{ b['estado'] }}">{{ b['estado']|upper }}</span>
         </div>
         
-        <!-- Botón de anulación al final por si hubo error -->
-        <div style="text-align: right; margin-top: 10px;">
-            <a href="/eliminar_venta/{{ b['id'] }}" onclick="return confirm('¿Anular boleta y devolver stock?')" style="color: #ef4444; font-size: 11px; text-decoration: underline;">
-                Anular comprobante
+        <div style="margin: 15px 0; font-size: 14px;">
+            {% for item in b['detalle']|fromjson %}
+                • {{ item.cantidad }}x {{ item.nombre }} ($${{ item.subtotal }})<br>
+            {% endfor %}
+        </div>
+
+        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Total:</span> <b>${{ b['total'] }}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: #22c55e;">
+                <span>Pagado:</span> <b>${{ b['pagado'] }}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: #ef4444; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 5px;">
+                <span>Saldo Pendiente:</span> <b>${{ b['saldo'] }}</b>
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            {% if b['saldo'] > 0 %}
+            <button onclick="abrirPago({{ b['id'] }}, '{{ b['cliente'] }}', {{ b['saldo'] }})" style="flex: 2; background: #22c55e;">💰 Registrar Pago</button>
+            {% endif %}
+            <a href="/eliminar_venta/{{ b['id'] }}" onclick="return confirm('¿Anular boleta y devolver stock?')" style="flex: 1; text-align: center;">
+                <button style="background: #ef4444; width: 100%;">🗑️ Anular</button>
             </a>
         </div>
     </div>
     {% endfor %}
 </div>
+
+<!-- Modal para registrar pagos -->
+<div id="modalPago" class="modal-pago">
+    <div class="card" style="max-width: 350px; margin: 20% auto;">
+        <h3>Cobrar a: <span id="pagoCliente"></span></h3>
+        <p>Deuda pendiente: <b id="pagoSaldo"></b></p>
+        <form action="/pagar_boleta" method="POST">
+            <input type="hidden" name="id" id="pagoId">
+            <label>Monto que entrega el cliente:</label>
+            <input type="number" name="monto" step="0.01" placeholder="Ej: 500" required autofocus>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="submit" style="background: #22c55e; flex: 1;">Confirmar Pago</button>
+                <button type="button" onclick="cerrarPago()" style="background: #475569; flex: 1;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirPago(id, cliente, saldo) {
+    document.getElementById('pagoId').value = id;
+    document.getElementById('pagoCliente').innerText = cliente;
+    document.getElementById('pagoSaldo').innerText = "$" + saldo;
+    document.getElementById('modalPago').style.display = 'block';
+}
+function cerrarPago() {
+    document.getElementById('modalPago').style.display = 'none';
+}
+</script>
 
 {% endblock %}
