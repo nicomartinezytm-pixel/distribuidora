@@ -17,6 +17,7 @@ def get_db():
 def init_db():
     db = get_db()
 
+    # 📦 PRODUCTOS
     db.execute("""
     CREATE TABLE IF NOT EXISTS productos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,6 +30,7 @@ def init_db():
     )
     """)
 
+    # 👥 CLIENTES
     db.execute("""
     CREATE TABLE IF NOT EXISTS clientes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,15 +40,17 @@ def init_db():
     )
     """)
 
+    # 🧾 VENTAS
     db.execute("""
     CREATE TABLE IF NOT EXISTS ventas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         cliente_id INTEGER,
         total REAL,
-        fecha TEXT DEFAULT (DATE('now'))
+        fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )
     """)
 
+    # 💳 BOLETAS
     db.execute("""
     CREATE TABLE IF NOT EXISTS boletas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,11 +58,11 @@ def init_db():
         total REAL,
         pagado REAL DEFAULT 0,
         estado TEXT DEFAULT 'pendiente',
-        fecha TEXT DEFAULT (DATE('now'))
+        fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )
     """)
 
-    # 🆕 COMPRAS A MAYORISTAS
+    # 🛒 COMPRAS A MAYORISTAS
     db.execute("""
     CREATE TABLE IF NOT EXISTS compras (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,7 +72,7 @@ def init_db():
         cantidad INTEGER,
         precio REAL,
         total REAL,
-        fecha TEXT DEFAULT (DATE('now'))
+        fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )
     """)
 
@@ -126,7 +130,7 @@ def eliminar_producto(id):
     return redirect("/")
 
 
-# ---------------- COMPRAS A MAYORISTAS ----------------
+# ---------------- COMPRAS ----------------
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
@@ -250,8 +254,22 @@ def dashboard():
         LIMIT 5
     """).fetchall()
 
-    # 🆕 total compras
     compras_total = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
+
+    # 📅 BALANCE MENSUAL
+    ventas_mes = db.execute("""
+        SELECT SUM(total)
+        FROM ventas
+        WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now','localtime')
+    """).fetchone()[0] or 0
+
+    compras_mes = db.execute("""
+        SELECT SUM(total)
+        FROM compras
+        WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now','localtime')
+    """).fetchone()[0] or 0
+
+    ganancia_mes = ventas_mes - compras_mes
 
     db.close()
 
@@ -260,7 +278,10 @@ def dashboard():
         total=total,
         ventas=ventas,
         ranking=ranking,
-        compras_total=compras_total
+        compras_total=compras_total,
+        ventas_mes=ventas_mes,
+        compras_mes=compras_mes,
+        ganancia_mes=ganancia_mes
     )
 
 
