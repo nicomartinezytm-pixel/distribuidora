@@ -13,7 +13,7 @@ def get_db():
     return conn
 
 
-# ---------------- INIT ----------------
+# ---------------- INIT DB ----------------
 def init_db():
     db = get_db()
 
@@ -27,22 +27,27 @@ def init_db():
     """)
 
     db.execute("""
-    CREATE TABLE IF NOT EXISTS ventas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        cliente TEXT,
-        direccion TEXT,
-        total REAL,
-        fecha TEXT DEFAULT (DATETIME('now','localtime'))
-    )
-    """)
-
-    db.execute("""
     CREATE TABLE IF NOT EXISTS compras (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         lugar TEXT,
         producto TEXT,
         cantidad INTEGER,
         total REAL,
+        fecha TEXT DEFAULT (DATETIME('now','localtime'))
+    )
+    """)
+
+    # 🔥 BOLETAS PRO (NUEVO SISTEMA COMPLETO)
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS ventas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cliente TEXT,
+        direccion TEXT,
+        detalle TEXT,
+        total REAL,
+        pagado REAL DEFAULT 0,
+        saldo REAL DEFAULT 0,
+        estado TEXT DEFAULT 'fiado',
         fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )
     """)
@@ -112,6 +117,7 @@ def finalizar_venta():
     carrito = data["carrito"]
 
     total = 0
+    detalle = []
 
     for item in carrito:
         prod = db.execute("SELECT * FROM productos WHERE id=?", (item["id"],)).fetchone()
@@ -120,11 +126,40 @@ def finalizar_venta():
             subtotal = prod["precio"] * item["cantidad"]
             total += subtotal
 
+            detalle.append({
+                "nombre": prod["nombre"],
+                "cantidad": item["cantidad"],
+                "precio": prod["precio"],
+                "subtotal": subtotal
+            })
+
             db.execute("UPDATE productos SET stock = stock - ? WHERE id=?",
                        (item["cantidad"], item["id"]))
 
-    db.execute("INSERT INTO ventas (cliente, direccion, total) VALUES (?, ?, ?)",
-               (cliente["nombre"], cliente["direccion"], total))
+    # 💰 pago parcial o fiado
+    pagado = float(data.get("pagado", 0))
+    saldo = total - pagado
+
+    if saldo <= 0:
+        estado = "pagado"
+        saldo = 0
+    elif pagado > 0:
+        estado = "parcial"
+    else:
+        estado = "fiado"
+
+    db.execute("""
+        INSERT INTO ventas (cliente, direccion, detalle, total, pagado, saldo, estado)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        cliente["nombre"],
+        cliente["direccion"],
+        json.dumps(detalle),
+        total,
+        pagado,
+        saldo,
+        estado
+    ))
 
     db.commit()
     db.close()
@@ -163,6 +198,19 @@ def clientes():
 
     db.close()
     return render_template("clientes.html", clientes=clientes)
+
+
+# ---------------- BOLETAS ----------------
+@app.route("/boletas")
+def boletas():
+    db = get_db()
+
+    boletas = db.execute("""
+        SELECT * FROM ventas ORDER BY id DESC
+    """).fetchall()
+
+    db.close()
+    return render_template("boletas.html", boletas=boletas)
 
 
 # ---------------- DASHBOARD ----------------
