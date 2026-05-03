@@ -18,50 +18,36 @@
 
 <div class="container">
 
-    <!-- ========================= -->
-    <!-- 📅 RESUMEN MENSUAL -->
-    <!-- ========================= -->
-
     <div class="card">
         <h2>📅 Resumen Mensual</h2>
 
-        <p>💰 Total ventas del mes: ${{ ventas_mes }}</p>
-        <p>🛒 Total compras del mes: ${{ compras_mes }}</p>
+        <p>💰 Total ventas del mes: ${{ ventas_mes or 0 }}</p>
+        <p>🛒 Total compras del mes: ${{ compras_mes or 0 }}</p>
 
         <hr>
 
-        <h2>
-            🔥 Ganancia neta del mes: ${{ ganancia_mes }}
-        </h2>
+        <h2>🔥 Ganancia neta del mes: ${{ ganancia_mes or 0 }}</h2>
     </div>
-
-    <!-- ========================= -->
-    <!-- 📊 EXPLICACIÓN -->
-    <!-- ========================= -->
 
     <div class="card">
         <h2>📊 Análisis</h2>
 
         <p>
-            📦 Las ventas representan el dinero que ingresa al negocio.<br>
-            🛒 Las compras representan el dinero invertido en mercadería.<br><br>
+            📦 Las ventas representan ingresos.<br>
+            🛒 Las compras representan inversión.<br><br>
 
-            🔥 La ganancia es la diferencia real entre ambos valores.
+            🔥 La ganancia es la diferencia real del negocio.
         </p>
     </div>
-
-    <!-- ========================= -->
-    <!-- 💡 FUTURO (VISUAL) -->
-    <!-- ========================= -->
 
     <div class="card">
         <h2>🚀 Próximas mejoras</h2>
 
         <ul>
-            <li>📈 Gráficos de ganancias mensuales</li>
-            <li>📊 Comparación mes a mes</li>
+            <li>📈 Gráficos mensuales</li>
+            <li>📊 Comparación entre meses</li>
             <li>📦 Ganancia por producto</li>
-            <li>🏪 Ganancia por proveedor (Carrefour, etc.)</li>
+            <li>🏪 Análisis por proveedor</li>
         </ul>
     </div>
 
