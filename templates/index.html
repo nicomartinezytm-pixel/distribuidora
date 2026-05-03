@@ -13,14 +13,18 @@ if ('serviceWorker' in navigator) {
 <h1 style="text-align:center;">📦 Distribuidora</h1>
 
 <div style="text-align:center; margin-bottom:15px;">
+
     <a href="/vender"><button>🧾 Ventas</button></a>
     <a href="/dashboard"><button>📊 Dashboard</button></a>
+    <a href="/ganancias"><button>📈 Ganancias</button></a>
+
 </div>
 
 <div class="container">
 
 <!-- AGREGAR PRODUCTO -->
 <div class="card">
+
 <h2>Agregar Producto</h2>
 
 <form method="POST" action="/agregar_producto">
@@ -29,30 +33,31 @@ if ('serviceWorker' in navigator) {
 <input name="precio" placeholder="Precio" required>
 <input name="stock" placeholder="Stock" required>
 
-<!-- TIPO -->
 <select name="tipo_precio" id="tipo_precio" onchange="cambiarTipo()" required>
     <option value="unidad">Unidad</option>
     <option value="cantidad">Cantidad</option>
     <option value="oferta">Oferta</option>
 </select>
 
-<!-- SOLO PARA CANTIDAD -->
+<!-- CANTIDAD -->
 <div id="campo_cantidad" style="display:none;">
-    <input name="cantidad_extra" placeholder="¿Cuántas unidades?">
+    <input name="cantidad_extra" placeholder="Multiplicador cantidad">
 </div>
 
-<!-- SOLO PARA OFERTA -->
+<!-- OFERTA -->
 <div id="campo_oferta" style="display:none;">
-    <input name="oferta_unidades" placeholder="Oferta: cuántas unidades incluye">
+    <input name="oferta_unidades" placeholder="Unidades de oferta">
 </div>
 
 <button>Guardar</button>
 
 </form>
+
 </div>
 
 <!-- PRODUCTOS -->
 <div class="card">
+
 <h2>Productos</h2>
 
 {% for p in productos %}
@@ -80,7 +85,6 @@ if ('serviceWorker' in navigator) {
 
 </div>
 
-<!-- JS DINÁMICO -->
 <script>
 function cambiarTipo() {
     let tipo = document.getElementById("tipo_precio").value;
