@@ -2,69 +2,91 @@
 <html>
 <head>
     <title>Distribuidora</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <style>
-        body {
-            font-family: Arial;
-            margin: 0;
-            background: #f4f6f8;
-        }
-
-        h1 {
-            text-align: center;
-            margin: 20px;
-        }
-
-        .menu {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            padding: 15px;
-        }
-
-        .btn {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            text-decoration: none;
-            color: black;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .btn:hover {
-            background: #e9ecef;
-        }
-
-        .blue { border-left: 6px solid #0d6efd; }
-        .green { border-left: 6px solid #198754; }
-        .red { border-left: 6px solid #dc3545; }
-
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<h1>📦 Distribuidora PRO</h1>
+<h1>📦 Distribuidora</h1>
 
-<div class="menu">
+<a href="/vender"><button>🧾 Ventas</button></a>
+<a href="/dashboard"><button>📊 Dashboard</button></a>
+<a href="/boletas"><button>💳 Boletas</button></a>
 
-    <a class="btn green" href="/vender">
-        🛒 Ventas
-    </a>
+<hr>
 
-    <a class="btn blue" href="/dashboard">
-        📊 Dashboard
-    </a>
+<!-- ===================== AGREGAR PRODUCTO ===================== -->
+<h2>➕ Agregar Producto</h2>
 
-    <a class="btn red" href="/boletas">
-        🧾 Boletas (Fiado)
-    </a>
+<form method="POST" action="/agregar_producto">
 
-</div>
+    <input name="nombre" placeholder="Nombre" required>
+    <input name="precio" placeholder="Precio" required>
+    <input name="stock" placeholder="Stock" required>
+
+    <br><br>
+
+    <label>Tipo de producto:</label>
+    <select name="tipo_precio" id="tipo" onchange="mostrarCampos()">
+        <option value="unidad">Unidad</option>
+        <option value="cantidad">Pack / Cantidad</option>
+        <option value="oferta">Oferta</option>
+    </select>
+
+    <br><br>
+
+    <!-- PACK -->
+    <div id="campo-cantidad" style="display:none;">
+        <input name="unidades" placeholder="¿Cuántas unidades trae el pack?">
+    </div>
+
+    <!-- OFERTA -->
+    <div id="campo-oferta" style="display:none;">
+        <input name="oferta_unidades" placeholder="Unidades en oferta (ej: 3x2)">
+    </div>
+
+    <br>
+
+    <button type="submit">Guardar producto</button>
+</form>
+
+<hr>
+
+<!-- ===================== LISTA PRODUCTOS ===================== -->
+<h2>📦 Productos</h2>
+
+{% for p in productos %}
+    <div style="border:1px solid #ccc; padding:10px; margin:5px;">
+        <b>{{p['nombre']}}</b><br>
+        Precio: ${{p['precio']}}<br>
+        Stock: {{p['stock']}}<br>
+        Tipo: {{p['tipo_precio']}}<br>
+        Unidades: {{p['unidades']}}<br>
+        Oferta: {{p['oferta_unidades']}}<br>
+
+        <a href="/eliminar_producto/{{p['id']}}">
+            <button>❌ Eliminar</button>
+        </a>
+    </div>
+{% endfor %}
+
+<!-- ===================== JS ===================== -->
+<script>
+function mostrarCampos() {
+    let tipo = document.getElementById("tipo").value;
+
+    document.getElementById("campo-cantidad").style.display = "none";
+    document.getElementById("campo-oferta").style.display = "none";
+
+    if (tipo === "cantidad") {
+        document.getElementById("campo-cantidad").style.display = "block";
+    }
+
+    if (tipo === "oferta") {
+        document.getElementById("campo-oferta").style.display = "block";
+    }
+}
+</script>
 
 </body>
 </html>
