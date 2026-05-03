@@ -1,42 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-    .grid-boletas { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-    .fiado { background: #fee2e2; color: #ef4444; }
-    .pagado { background: #dcfce7; color: #22c55e; }
-    .parcial { background: #fef9c3; color: #a16207; }
-</style>
+<h2>Cobranzas / Boletas</h2>
 
-<h1>📑 Cobranzas</h1>
-<div class="grid-boletas">
-    {% for b in boletas %}
-    <div class="card">
-        <div style="display: flex; justify-content: space-between;">
-            <small>{{ b.fecha }}</small>
-            <span class="badge {{ b.estado }}">{{ b.estado|upper }}</span>
+{% for b in boletas %}
+<div class="card-cobro" style="border-left-color: {{ '#22c55e' if b.saldo <= 0 else '#ef4444' }}">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <b style="font-size: 20px;">{{ b.cliente }}</b><br>
+            <small style="color: var(--muted)">{{ b.fecha }}</small>
         </div>
-        <h3>{{ b.cliente }}</h3>
-        <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; margin: 10px 0;">
-            {% for item in b.detalle|fromjson %}
-            <div style="display: flex; justify-content: space-between; font-size: 13px;">
-                <span>{{ item.cantidad }}x {{ item.nombre }}</span>
-                <span>${{ item.subtotal }}</span>
-            </div>
-            {% endfor %}
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-            <span>Total: <b>${{ b.total }}</b></span>
-            <span style="color: #ef4444;">Debe: <b>${{ b.saldo }}</b></span>
-        </div>
-        {% if b.saldo > 0 %}
-        <form action="/registrar_pago" method="POST" style="margin-top: 15px; display: flex; gap: 5px;">
-            <input type="hidden" name="id" value="{{ b.id }}">
-            <input type="number" step="0.01" name="monto" placeholder="Entrega $" required style="flex: 1;">
-            <button type="submit" style="background: #22c55e;">Cobrar</button>
-        </form>
-        {% endif %}
+        <span class="badge {{ 'pagado' if b.saldo <= 0 else 'fiado' }}">
+            {{ 'PAGADO' if b.saldo <= 0 else 'DEUDA' }}
+        </span>
     </div>
-    {% endfor %}
+
+    <div style="margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between;">
+            <span>Total:</span> <b>${{ b.total }}</b>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+            <span>Falta cobrar:</span> 
+            <span class="monto-grande">${{ b.saldo }}</span>
+        </div>
+    </div>
+
+    {% if b.saldo > 0 %}
+    <form action="/registrar_pago" method="POST" style="display: flex; gap: 5px;">
+        <input type="hidden" name="id" value="{{ b.id }}">
+        <input type="number" name="monto" placeholder="Monto a cobrar $" style="margin:0; flex: 2;">
+        <button type="submit" style="margin:0; flex: 1; background: #22c55e;">Cobrar</button>
+    </form>
+    {% endif %}
+    
+    <div style="margin-top: 10px;">
+        <a href="https://wa.me/{{ b.whatsapp }}" style="color: #22c55e; text-decoration: none; font-size: 14px;">
+            💬 Enviar recordatorio WhatsApp
+        </a>
+    </div>
 </div>
+{% endfor %}
 {% endblock %}
