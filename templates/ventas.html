@@ -3,31 +3,36 @@
 
 <div class="container">
 
-    <h1>🧾 Ventas</h1>
+<h1>🧾 Ventas</h1>
 
-    <!-- CLIENTE -->
-    <div class="card">
-        <h3>👤 Cliente</h3>
+<!-- ================= CLIENTE ================= -->
+<div class="card">
+<h3>👤 Cliente</h3>
 
-        <input id="nombre" placeholder="Nombre">
-        <input id="direccion" placeholder="Dirección">
-    </div>
+<input id="nombre" placeholder="Nombre del cliente">
+<input id="direccion" placeholder="Dirección">
 
-    <!-- PRODUCTOS -->
-    <div class="card">
-        <h3>📦 Productos</h3>
-        <div id="productos"></div>
-    </div>
+</div>
 
-    <!-- CARRITO -->
-    <div class="card">
-        <h3>🛒 Carrito</h3>
-        <div id="carrito"></div>
+<!-- ================= PRODUCTOS ================= -->
+<div class="card">
+<h3>📦 Productos disponibles</h3>
 
-        <h3>Total: $<span id="total">0</span></h3>
+<div id="productos"></div>
 
-        <button onclick="finalizar()">FINALIZAR VENTA</button>
-    </div>
+</div>
+
+<!-- ================= CARRITO ================= -->
+<div class="card">
+<h3>🛒 Carrito de venta</h3>
+
+<div id="carrito"></div>
+
+<h2>Total: $<span id="total">0</span></h2>
+
+<button onclick="finalizar()">FINALIZAR VENTA</button>
+
+</div>
 
 </div>
 
@@ -35,7 +40,7 @@
 
 let carrito = [];
 
-// cargar productos
+// CARGAR PRODUCTOS
 fetch("/productos_json")
 .then(r => r.json())
 .then(data => {
@@ -43,6 +48,7 @@ fetch("/productos_json")
     let div = document.getElementById("productos");
 
     data.forEach(p => {
+
         div.innerHTML += `
         <div class="card">
             <b>${p.nombre}</b><br>
@@ -51,30 +57,31 @@ fetch("/productos_json")
             <button onclick="agregar(${p.id}, '${p.nombre}', ${p.precio})">
                 Agregar
             </button>
-        </div>`;
+        </div>
+        `;
     });
 
 });
 
-function agregar(id, nombre, precio) {
+function agregar(id, nombre, precio){
 
     let item = carrito.find(p => p.id === id);
 
-    if (item) {
+    if(item){
         item.cantidad++;
     } else {
         carrito.push({
-            id,
-            nombre,
-            precio,
-            cantidad: 1
+            id:id,
+            nombre:nombre,
+            precio:precio,
+            cantidad:1
         });
     }
 
     render();
 }
 
-function render() {
+function render(){
 
     let div = document.getElementById("carrito");
     div.innerHTML = "";
@@ -88,34 +95,40 @@ function render() {
 
         div.innerHTML += `
         <div class="card">
-            ${p.nombre} x${p.cantidad} - $${subtotal}
-            <button onclick="quitar(${i})">X</button>
-        </div>`;
+            ${p.nombre} x${p.cantidad} = $${subtotal}
+            <button class="red" onclick="quitar(${i})">Eliminar</button>
+        </div>
+        `;
     });
 
-    document.getElementById("total").innerText = total;
+    document.getElementById("total").innerText = total.toFixed(2);
 }
 
-function quitar(i) {
-    carrito.splice(i, 1);
+function quitar(i){
+    carrito.splice(i,1);
     render();
 }
 
-function finalizar() {
+function finalizar(){
 
-    fetch("/finalizar_venta", {
-        method: "POST",
-        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: "data=" + encodeURIComponent(JSON.stringify({
-            cliente: {
-                nombre: document.getElementById("nombre").value,
-                direccion: document.getElementById("direccion").value
-            },
-            carrito: carrito
-        }))
+    let data = {
+        cliente:{
+            nombre: document.getElementById("nombre").value,
+            direccion: document.getElementById("direccion").value
+        },
+        carrito: carrito
+    };
+
+    fetch("/finalizar_venta",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/x-www-form-urlencoded"
+        },
+        body:"data="+encodeURIComponent(JSON.stringify(data))
     })
-    .then(r => r.json())
-    .then(res => {
+
+    .then(r=>r.json())
+    .then(res=>{
         alert("Venta realizada ✔");
         location.reload();
     });
