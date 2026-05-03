@@ -100,7 +100,7 @@ def eliminar_producto(id):
     return redirect("/")
 
 
-# ---------------- COMPRAS MAYORISTAS ----------------
+# ---------------- COMPRAS ----------------
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
@@ -112,7 +112,6 @@ def agregar_compra():
 
     precio_unitario = total / cantidad if cantidad > 0 else 0
 
-    # sumar stock si existe producto
     prod = db.execute("SELECT * FROM productos WHERE nombre=?", (producto,)).fetchone()
 
     if prod:
@@ -129,7 +128,6 @@ def agregar_compra():
 
     db.commit()
     db.close()
-
     return redirect("/")
 
 
@@ -207,16 +205,34 @@ def boletas():
     return render_template("boletas.html", boletas=boletas)
 
 
-# ---------------- DASHBOARD ----------------
+# ---------------- DASHBOARD (CORREGIDO PRO) ----------------
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
 
     total_ventas = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
     total_compras = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
-    ventas = db.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
+    ventas = db.execute("SELECT COUNT(*) FROM ventas").fetchone()[0] or 0
 
     ganancia = total_ventas - total_compras
+
+    ventas_mes = db.execute("""
+        SELECT SUM(total)
+        FROM ventas
+        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
+    """).fetchone()[0] or 0
+
+    compras_mes = db.execute("""
+        SELECT SUM(total)
+        FROM compras
+        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
+    """).fetchone()[0] or 0
+
+    ganancia_mes = ventas_mes - compras_mes
+
+    margen = 0
+    if total_ventas > 0:
+        margen = ((total_ventas - total_compras) / total_ventas) * 100
 
     db.close()
 
@@ -225,15 +241,15 @@ def dashboard():
         total_ventas=total_ventas,
         total_compras=total_compras,
         ventas=ventas,
-        ganancia=ganancia
+        ganancia=ganancia,
+        ventas_mes=ventas_mes,
+        compras_mes=compras_mes,
+        ganancia_mes=ganancia_mes,
+        margen=margen
     )
-@app.route("/productos_json")
-def productos_json():
-    db = get_db()
-    productos = db.execute("SELECT * FROM productos").fetchall()
-    db.close()
 
-    return jsonify([dict(p) for p in productos])
+
+# ---------------- GANANCIAS ----------------
 @app.route("/ganancias")
 def ganancias():
     db = get_db()
@@ -260,6 +276,18 @@ def ganancias():
         compras_mes=compras_mes,
         ganancia_mes=ganancia_mes
     )
+
+
+# ---------------- JSON PRODUCTOS ----------------
+@app.route("/productos_json")
+def productos_json():
+    db = get_db()
+    productos = db.execute("SELECT * FROM productos").fetchall()
+    db.close()
+
+    return jsonify([dict(p) for p in productos])
+
+
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
