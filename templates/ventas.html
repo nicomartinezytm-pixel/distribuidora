@@ -12,6 +12,8 @@
 <input id="nombre" placeholder="Nombre del cliente">
 <input id="direccion" placeholder="Dirección">
 
+<!-- 💰 NUEVO: PAGO -->
+<input id="pagado" placeholder="Dinero que paga ahora (opcional)">
 </div>
 
 <!-- ================= PRODUCTOS ================= -->
@@ -111,12 +113,19 @@ function quitar(i){
 
 function finalizar(){
 
+    let total = parseFloat(document.getElementById("total").innerText);
+    let pagado = parseFloat(document.getElementById("pagado").value || 0);
+
+    let saldo = total - pagado;
+
     let data = {
         cliente:{
             nombre: document.getElementById("nombre").value,
             direccion: document.getElementById("direccion").value
         },
-        carrito: carrito
+        carrito: carrito,
+        pagado: pagado,
+        saldo: saldo
     };
 
     fetch("/finalizar_venta",{
@@ -129,7 +138,13 @@ function finalizar(){
 
     .then(r=>r.json())
     .then(res=>{
-        alert("Venta realizada ✔");
+        alert(
+            "Venta realizada ✔\n" +
+            "Total: $" + total + "\n" +
+            "Pagado: $" + pagado + "\n" +
+            "Saldo: $" + saldo
+        );
+
         location.reload();
     });
 
