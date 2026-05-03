@@ -1,86 +1,90 @@
 body {
     margin: 0;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     background: #0f172a;
-    color: white;
+    color: #e2e8f0;
 }
 
 /* HEADER */
 h1 {
     text-align: center;
-    padding: 15px;
-}
-
-/* BOTONES PRINCIPALES */
-a button {
-    width: 45%;
-    margin: 5px;
-    padding: 15px;
-    font-size: 18px;
-    border-radius: 10px;
-}
-
-/* CONTENEDOR MOBILE */
-.container {
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    gap: 15px;
-}
-
-/* TARJETAS */
-.card {
-    background: #1e293b;
-    padding: 15px;
-    border-radius: 15px;
-}
-
-/* INPUTS */
-input, select {
-    width: 100%;
-    padding: 12px;
-    margin: 5px 0;
-    border-radius: 8px;
-    border: none;
+    padding: 20px;
+    color: #38bdf8;
 }
 
 /* BOTONES */
 button {
-    background: #22c55e;
+    background: #38bdf8;
     border: none;
-    color: white;
-    padding: 12px;
-    font-size: 16px;
+    padding: 10px 15px;
+    margin: 5px;
     border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #0f172a;
+    transition: 0.2s;
 }
 
-/* PRODUCTOS GRID */
-#productos {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+button:hover {
+    background: #0ea5e9;
+    transform: scale(1.05);
+}
+
+/* LINKS */
+a {
+    text-decoration: none;
+}
+
+/* CARDS */
+.card {
+    background: #1e293b;
+    padding: 15px;
+    margin: 10px;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+/* INPUTS */
+input, select {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+}
+
+/* CONTAINER */
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* NAVBAR */
+.nav {
+    display: flex;
+    justify-content: center;
+    background: #1e293b;
+    padding: 10px;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
-#productos button {
-    padding: 20px;
-    font-size: 16px;
+/* TABLAS */
+table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-/* CARRITO */
-#carrito {
-    list-style: none;
-    padding: 0;
+td, th {
+    padding: 10px;
+    border-bottom: 1px solid #334155;
 }
 
-#carrito li {
-    background: #334155;
-    margin: 5px 0;
+/* ALERTAS */
+.alert {
+    background: #dc2626;
     padding: 10px;
     border-radius: 10px;
-}
-
-/* TOTAL */
-#total {
-    font-size: 22px;
-    text-align: center;
+    margin: 10px;
 }
