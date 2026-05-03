@@ -54,8 +54,7 @@ def init_db():
         total REAL,
         pagado REAL DEFAULT 0,
         estado TEXT DEFAULT 'pendiente',
-        fecha TEXT DEFAULT (DATE('now')),
-        vencimiento TEXT
+        fecha TEXT DEFAULT (DATE('now'))
     )
     """)
 
@@ -129,7 +128,6 @@ def finalizar_venta():
 
     cursor = db.cursor()
 
-    # crear cliente SIEMPRE
     cursor.execute("""
         INSERT INTO clientes (nombre, telefono, direccion)
         VALUES (?, ?, ?)
@@ -150,7 +148,6 @@ def finalizar_venta():
             WHERE id=?
         """, (item["cantidad"], item["id"]))
 
-    # 🔥 esto alimenta la cuenta corriente
     db.execute("""
         INSERT INTO ventas (cliente_id, total)
         VALUES (?, ?)
@@ -162,32 +159,21 @@ def finalizar_venta():
     return jsonify({"ok": True})
 
 
-# ---------------- CUENTA CORRIENTE CLIENTES ----------------
-@app.route("/clientes")
-def clientes():
+# ---------------- BOLETAS (🔥 FIX REAL DEL 404) ----------------
+@app.route("/boletas")
+def boletas():
     db = get_db()
 
-    clientes = db.execute("""
-        SELECT c.id, c.nombre,
-        COALESCE(SUM(v.total), 0) as total_comprado
-        FROM clientes c
-        LEFT JOIN ventas v ON v.cliente_id = c.id
-        GROUP BY c.id
-    """).fetchall()
-
-    deudas = db.execute("""
-        SELECT c.nombre,
-        SUM(b.total - b.pagado) as deuda
-        FROM boletas b
-        JOIN clientes c ON c.id = b.cliente_id
-        WHERE b.estado='pendiente'
-        GROUP BY c.id
-        ORDER BY deuda DESC
+    boletas = db.execute("""
+        SELECT boletas.*, clientes.nombre
+        FROM boletas
+        JOIN clientes ON clientes.id = boletas.cliente_id
+        ORDER BY boletas.id DESC
     """).fetchall()
 
     db.close()
 
-    return render_template("clientes.html", clientes=clientes, deudas=deudas)
+    return render_template("boletas.html", boletas=boletas)
 
 
 # ---------------- DASHBOARD ----------------
