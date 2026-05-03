@@ -13,7 +13,7 @@ def get_db():
     return conn
 
 
-# ---------------- INIT DB ----------------
+# ---------------- INIT ----------------
 def init_db():
     db = get_db()
 
@@ -22,23 +22,17 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT,
         precio REAL,
-        stock INTEGER
-    )
-    """)
-
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS clientes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT,
-        telefono TEXT,
-        direccion TEXT
+        stock INTEGER,
+        tipo TEXT DEFAULT 'unidad',
+        oferta TEXT DEFAULT ''
     )
     """)
 
     db.execute("""
     CREATE TABLE IF NOT EXISTS ventas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        cliente_id INTEGER,
+        cliente TEXT,
+        direccion TEXT,
         total REAL,
         fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )
@@ -47,18 +41,16 @@ def init_db():
     db.execute("""
     CREATE TABLE IF NOT EXISTS compras (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        producto TEXT,
         lugar TEXT,
+        producto TEXT,
         cantidad INTEGER,
         total REAL,
-        precio_unitario REAL,
         fecha TEXT DEFAULT (DATETIME('now','localtime'))
     )
     """)
 
     db.commit()
     db.close()
-
 
 init_db()
 
@@ -100,38 +92,15 @@ def eliminar_producto(id):
     return redirect("/")
 
 
-# ---------------- COMPRAS ----------------
-@app.route("/agregar_compra", methods=["POST"])
-def agregar_compra():
-    db = get_db()
-
-    producto = request.form["producto"]
-    lugar = request.form["lugar"]
-    cantidad = int(request.form["cantidad"])
-    total = float(request.form["total"])
-
-    precio_unitario = total / cantidad if cantidad > 0 else 0
-
-    prod = db.execute("SELECT * FROM productos WHERE nombre=?", (producto,)).fetchone()
-
-    if prod:
-        db.execute("""
-            UPDATE productos
-            SET stock = stock + ?
-            WHERE nombre=?
-        """, (cantidad, producto))
-
-    db.execute("""
-        INSERT INTO compras (producto, lugar, cantidad, total, precio_unitario)
-        VALUES (?, ?, ?, ?, ?)
-    """, (producto, lugar, cantidad, total, precio_unitario))
-
-    db.commit()
-    db.close()
-    return redirect("/")
-
-
 # ---------------- VENTAS ----------------
+@app.route("/vender")
+def vender():
+    db = get_db()
+    productos = db.execute("SELECT * FROM productos").fetchall()
+    db.close()
+    return render_template("ventas.html", productos=productos)
+
+
 @app.route("/finalizar_venta", methods=["POST"])
 def finalizar_venta():
     db = get_db()
@@ -139,15 +108,6 @@ def finalizar_venta():
     data = json.loads(request.form["data"])
     cliente = data["cliente"]
     carrito = data["carrito"]
-
-    cursor = db.cursor()
-
-    cursor.execute("""
-        INSERT INTO clientes (nombre, telefono, direccion)
-        VALUES (?, ?, ?)
-    """, (cliente["nombre"], cliente["telefono"], cliente["direccion"]))
-
-    cliente_id = cursor.lastrowid
 
     total = 0
 
@@ -165,14 +125,34 @@ def finalizar_venta():
             """, (item["cantidad"], item["id"]))
 
     db.execute("""
-        INSERT INTO ventas (cliente_id, total)
-        VALUES (?, ?)
-    """, (cliente_id, total))
+        INSERT INTO ventas (cliente, direccion, total)
+        VALUES (?, ?, ?)
+    """, (cliente["nombre"], cliente["direccion"], total))
 
     db.commit()
     db.close()
 
     return jsonify({"ok": True})
+
+
+# ---------------- COMPRAS ----------------
+@app.route("/agregar_compra", methods=["POST"])
+def agregar_compra():
+    db = get_db()
+
+    lugar = request.form["lugar"]
+    producto = request.form["producto"]
+    cantidad = int(request.form["cantidad"])
+    total = float(request.form["total"])
+
+    db.execute("""
+        INSERT INTO compras (lugar, producto, cantidad, total)
+        VALUES (?, ?, ?, ?)
+    """, (lugar, producto, cantidad, total))
+
+    db.commit()
+    db.close()
+    return redirect("/")
 
 
 # ---------------- CLIENTES ----------------
@@ -181,71 +161,31 @@ def clientes():
     db = get_db()
 
     clientes = db.execute("""
-        SELECT c.id, c.nombre,
-        COALESCE(SUM(v.total),0) as total_comprado
-        FROM clientes c
-        LEFT JOIN ventas v ON v.cliente_id = c.id
-        GROUP BY c.id
+        SELECT cliente, SUM(total) as total
+        FROM ventas
+        GROUP BY cliente
     """).fetchall()
 
     db.close()
     return render_template("clientes.html", clientes=clientes)
 
 
-# ---------------- BOLETAS ----------------
-@app.route("/boletas")
-def boletas():
-    db = get_db()
-
-    boletas = db.execute("""
-        SELECT * FROM ventas ORDER BY id DESC
-    """).fetchall()
-
-    db.close()
-    return render_template("boletas.html", boletas=boletas)
-
-
-# ---------------- DASHBOARD (CORREGIDO PRO) ----------------
+# ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
     db = get_db()
 
-    total_ventas = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
-    total_compras = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
-    ventas = db.execute("SELECT COUNT(*) FROM ventas").fetchone()[0] or 0
-
-    ganancia = total_ventas - total_compras
-
-    ventas_mes = db.execute("""
-        SELECT SUM(total)
-        FROM ventas
-        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
-    """).fetchone()[0] or 0
-
-    compras_mes = db.execute("""
-        SELECT SUM(total)
-        FROM compras
-        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
-    """).fetchone()[0] or 0
-
-    ganancia_mes = ventas_mes - compras_mes
-
-    margen = 0
-    if total_ventas > 0:
-        margen = ((total_ventas - total_compras) / total_ventas) * 100
+    ventas = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
+    compras = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
+    ganancia = ventas - compras
 
     db.close()
 
     return render_template(
         "dashboard.html",
-        total_ventas=total_ventas,
-        total_compras=total_compras,
         ventas=ventas,
-        ganancia=ganancia,
-        ventas_mes=ventas_mes,
-        compras_mes=compras_mes,
-        ganancia_mes=ganancia_mes,
-        margen=margen
+        compras=compras,
+        ganancia=ganancia
     )
 
 
@@ -254,38 +194,12 @@ def dashboard():
 def ganancias():
     db = get_db()
 
-    ventas_mes = db.execute("""
-        SELECT SUM(total)
-        FROM ventas
-        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
-    """).fetchone()[0] or 0
-
-    compras_mes = db.execute("""
-        SELECT SUM(total)
-        FROM compras
-        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
-    """).fetchone()[0] or 0
-
-    ganancia_mes = ventas_mes - compras_mes
+    ventas = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
+    compras = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
 
     db.close()
 
-    return render_template(
-        "ganancias.html",
-        ventas_mes=ventas_mes,
-        compras_mes=compras_mes,
-        ganancia_mes=ganancia_mes
-    )
-
-
-# ---------------- JSON PRODUCTOS ----------------
-@app.route("/productos_json")
-def productos_json():
-    db = get_db()
-    productos = db.execute("SELECT * FROM productos").fetchall()
-    db.close()
-
-    return jsonify([dict(p) for p in productos])
+    return render_template("ganancias.html", ventas=ventas, compras=compras)
 
 
 # ---------------- RUN ----------------
