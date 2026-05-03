@@ -23,7 +23,8 @@ def init_db():
         nombre TEXT,
         precio REAL,
         stock INTEGER,
-        tipo_precio TEXT
+        tipo_precio TEXT,
+        unidades INTEGER DEFAULT 1
     )
     """)
 
@@ -64,7 +65,7 @@ def init_db():
 init_db()
 
 
-# ---------------- HOME (ESTO ES LO QUE TE FALTABA BIEN) ----------------
+# ---------------- HOME ----------------
 @app.route("/")
 def index():
     db = get_db()
@@ -73,7 +74,7 @@ def index():
     return render_template("index.html", productos=productos)
 
 
-# ---------------- PRODUCTOS JSON (VENTAS) ----------------
+# ---------------- PRODUCTOS JSON ----------------
 @app.route("/productos_json")
 def productos_json():
     db = get_db()
@@ -82,20 +83,35 @@ def productos_json():
     return jsonify([dict(p) for p in productos])
 
 
-# ---------------- AGREGAR PRODUCTO (DESDE HOME) ----------------
+# ---------------- AGREGAR PRODUCTO (AQUÍ ESTÁ TODO LO NUEVO BIEN) ----------------
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
 
+    nombre = request.form["nombre"]
+    precio = float(request.form["precio"])
+    stock = int(request.form["stock"])
+    tipo = request.form["tipo_precio"]
+
+    # 🔥 lógica nueva
+    if tipo == "unidad":
+        unidades = 1
+
+    elif tipo == "cantidad":
+        # ej: pack de 6 unidades
+        unidades = int(request.form.get("unidades", 1))
+
+    elif tipo == "oferta":
+        # ej: 2x1 / 3x2 etc
+        unidades = int(request.form.get("unidades_oferta", 1))
+
+    else:
+        unidades = 1
+
     db.execute("""
-        INSERT INTO productos (nombre, precio, stock, tipo_precio)
-        VALUES (?, ?, ?, ?)
-    """, (
-        request.form["nombre"],
-        float(request.form["precio"]),
-        int(request.form["stock"]),
-        request.form["tipo_precio"]
-    ))
+        INSERT INTO productos (nombre, precio, stock, tipo_precio, unidades)
+        VALUES (?, ?, ?, ?, ?)
+    """, (nombre, precio, stock, tipo, unidades))
 
     db.commit()
     db.close()
@@ -161,6 +177,7 @@ def finalizar_venta():
 
     for item in carrito:
         prod = db.execute("SELECT precio FROM productos WHERE id=?", (item["id"],)).fetchone()
+
         subtotal = prod["precio"] * item["cantidad"]
         total += subtotal
 
@@ -190,7 +207,6 @@ def boletas():
         SELECT boletas.*, clientes.nombre
         FROM boletas
         JOIN clientes ON clientes.id = boletas.cliente_id
-        ORDER BY boletas.id DESC
     """).fetchall()
 
     alertas = db.execute("""
@@ -250,13 +266,11 @@ def dashboard():
 
     db.close()
 
-    return render_template(
-        "dashboard.html",
-        total=total,
-        ventas=ventas,
-        boletas_pendientes=boletas_pendientes,
-        deuda_total=deuda_total
-    )
+    return render_template("dashboard.html",
+                           total=total,
+                           ventas=ventas,
+                           boletas_pendientes=boletas_pendientes,
+                           deuda_total=deuda_total)
 
 
 # ---------------- RUN ----------------
