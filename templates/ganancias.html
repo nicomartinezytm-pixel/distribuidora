@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ganancias</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 0;
+            background: #f2f2f2;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .card {
+            background: white;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .back {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: black;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<a href="/" class="back">←</a>
+
+<h1>📊 Ganancias del Día</h1>
+
+<div class="card">
+    <h2>Total ganado hoy</h2>
+    <h1>$ {{ total_dia }}</h1>
+</div>
+
+<div class="card">
+    <h2>Ventas del día</h2>
+    <h1>{{ ventas_dia }}</h1>
+</div>
+
+<div class="card">
+    <h2>Clientes</h2>
+
+    {% for c in clientes %}
+        <p>👤 {{ c[0] }} - ${{ c[1] }}</p>
+    {% endfor %}
+</div>
+
+</body>
+</html>
