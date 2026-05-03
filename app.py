@@ -38,6 +38,17 @@ def init_db():
 
 init_db()
 
+# --- PANEL DE CONTROL (DASHBOARD) ---
+@app.route("/dashboard")
+def dashboard():
+    db = get_db()
+    v = db.execute("SELECT SUM(total) FROM ventas").fetchone()[0] or 0
+    c = db.execute("SELECT SUM(total) FROM compras").fetchone()[0] or 0
+    alerta = db.execute("SELECT COUNT(id) FROM productos WHERE stock < 10").fetchone()[0] or 0
+    db.close()
+    return render_template("dashboard.html", total_ventas=v, total_compras=c, ganancia=v-c, alertas_stock=alerta)
+
+# --- INVENTARIO ---
 @app.route("/")
 def index():
     db = get_db()
@@ -46,7 +57,6 @@ def index():
     db.close()
     return render_template("index.html", productos=productos)
 
-# --- PRODUCTOS: AGREGAR, EDITAR, ELIMINAR ---
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
@@ -75,7 +85,7 @@ def eliminar_producto(id):
     db.close()
     return redirect("/")
 
-# --- COMPRAS: ABASTECIMIENTO INTELIGENTE ---
+# --- COMPRAS ---
 @app.route("/compras")
 def compras():
     db = get_db()
@@ -86,28 +96,22 @@ def compras():
 
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
-    try:
-        db = get_db()
-        nombre_p = request.form['producto'].strip()
-        cantidad = int(request.form['cantidad'])
-        total_compra = float(request.form['total'])
-        
-        db.execute("INSERT INTO compras (lugar, direccion, producto, cantidad, total) VALUES (?, ?, ?, ?, ?)",
-                   (request.form['lugar'], request.form['direccion'], nombre_p, cantidad, total_compra))
-
-        p_existente = db.execute("SELECT id FROM productos WHERE nombre = ?", (nombre_p,)).fetchone()
-        if p_existente:
-            db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cantidad, nombre_p))
-        else:
-            # Crea el producto nuevo si no existe
-            precio_base = (total_compra / cantidad) * 1.30
-            db.execute("INSERT INTO productos (nombre, precio, stock, unidad) VALUES (?, ?, ?, ?)",
-                       (nombre_p, round(precio_base, 2), cantidad, 'Unidad'))
-        db.commit()
-        db.close()
-        return redirect("/compras")
-    except Exception as e:
-        return f"Error en compra: {e}", 500
+    db = get_db()
+    nombre_p = request.form['producto'].strip()
+    cantidad = int(request.form['cantidad'])
+    total_c = float(request.form['total'])
+    db.execute("INSERT INTO compras (lugar, direccion, producto, cantidad, total) VALUES (?, ?, ?, ?, ?)",
+               (request.form['lugar'], request.form['direccion'], nombre_p, cantidad, total_c))
+    p_existente = db.execute("SELECT id FROM productos WHERE nombre = ?", (nombre_p,)).fetchone()
+    if p_existente:
+        db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cantidad, nombre_p))
+    else:
+        precio_sugerido = (total_c / cantidad) * 1.30
+        db.execute("INSERT INTO productos (nombre, precio, stock, unidad) VALUES (?, ?, ?, ?)",
+                   (nombre_p, round(precio_sugerido, 2), cantidad, 'Unidad'))
+    db.commit()
+    db.close()
+    return redirect("/compras")
 
 # --- VENTAS Y COBRANZAS ---
 @app.route("/vender")
@@ -134,7 +138,6 @@ def finalizar_venta():
             total_v += sub
             detalle.append({"nombre": p["nombre"], "cantidad": item["cantidad"], "precio": p["precio"], "subtotal": sub})
             db.execute("UPDATE productos SET stock = stock - ? WHERE id=?", (item["cantidad"], item["id"]))
-    
     db.execute("INSERT INTO ventas (cliente, direccion, telefono, detalle, total, pagado, saldo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                (data["cliente"]["nombre"], data["cliente"]["direccion"], data["cliente"]["telefono"], json.dumps(detalle), total_v, 0, total_v, "fiado"))
     db.commit()
@@ -155,9 +158,9 @@ def registrar_pago():
     monto = float(request.form['monto'])
     v = db.execute("SELECT total, pagado FROM ventas WHERE id=?", (id_v,)).fetchone()
     nuevo_p = v['pagado'] + monto
-    nuevo_s = v['total'] - nuevo_p
+    nuevo_s = max(0, v['total'] - nuevo_p)
     est = "pagado" if nuevo_s <= 0 else "parcial"
-    db.execute("UPDATE ventas SET pagado=?, saldo=?, estado=? WHERE id=?", (nuevo_p, max(0, nuevo_s), est, id_v))
+    db.execute("UPDATE ventas SET pagado=?, saldo=?, estado=? WHERE id=?", (nuevo_p, nuevo_s, est, id_v))
     db.commit()
     db.close()
     return redirect("/boletas")
