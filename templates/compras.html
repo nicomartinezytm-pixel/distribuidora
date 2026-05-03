@@ -2,95 +2,70 @@
 {% block content %}
 
 <style>
-    .stats-compras { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-    .alerta-stock { background: #fee2e2; border-left: 5px solid #ef4444; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-    .badge-costo { background: #334155; color: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-    .card-compra { border-left: 4px solid #3b82f6; transition: 0.3s; }
-    .card-compra:hover { transform: scale(1.02); }
+    .alerta-stock { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .card-compra { border-left: 4px solid #3b82f6; position: relative; }
+    .badge-unitario { background: #1e293b; color: #3b82f6; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+    .form-compras { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 30px; }
 </style>
 
 <div style="display: flex; justify-content: space-between; align-items: center;">
     <h1>🏭 Panel de Abastecimiento</h1>
-    <span style="background: #1e293b; padding: 5px 15px; border-radius: 20px; font-size: 13px;">Control Interno Distribuidora</span>
+    <span style="color: #94a3b8;">Control de Gastos y Stock</span>
 </div>
 
-<!-- 1. ALERTAS INGENIOSAS (PRODUCTOS POR AGOTARSE) -->
-<div id="alertasContainer">
-    <!-- Se puede filtrar vía Python o JS, aquí mostramos una lógica simple -->
-    <div class="alerta-stock">
-        <strong>⚠️ ¡Atención!</strong> Hay productos con stock bajo. Revisar inventario antes de salir.
-    </div>
+<!-- ALERTAS DE STOCK BAJO -->
+<div class="alerta-stock">
+    <span>⚠️</span>
+    <span><strong>Recordatorio:</strong> Revisar productos con stock menor a 10 unidades antes de confirmar nuevos pedidos al mayorista.</span>
 </div>
 
-<!-- 2. REGISTRO DE COMPRA PROFESIONAL -->
-<div class="card" style="background: #1e293b; border: 1px solid #334155;">
-    <h3 style="margin-top: 0; color: #3b82f6;">📥 Registrar Nueva Entrada de Mercadería</h3>
+<!-- FORMULARIO DE CARGA -->
+<div class="form-compras">
+    <h3 style="margin-top: 0; color: #3b82f6;">📥 Registrar Compra a Mayorista</h3>
     <form action="/agregar_compra" method="POST">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <div>
-                <label>Mayorista / Proveedor</label>
-                <input type="text" name="lugar" placeholder="Ej: Macro, La Lácteo, Don Julio..." required>
-            </div>
-            <div>
-                <label>Sucursal / Dirección</label>
-                <input type="text" name="direccion" placeholder="Ej: Av. Colón 1200">
-            </div>
+            <input type="text" name="lugar" placeholder="Nombre del Mayorista (ej: Macro)" required>
+            <input type="text" name="direccion" placeholder="Dirección / Ciudad">
         </div>
-        
         <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
-            <div>
-                <label>Producto comprado</label>
-                <select name="producto" required>
-                    <option value="">Seleccionar del inventario...</option>
-                    {% for p in productos %}
-                    <option value="{{ p.nombre }}">{{ p.nombre }} (Stock actual: {{ p.stock }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label>Cantidad</label>
-                <input type="number" name="cantidad" placeholder="0" required>
-            </div>
-            <div>
-                <label>Costo Total ($)</label>
-                <input type="number" step="0.01" name="total" placeholder="Total pagado" required>
-            </div>
+            <select name="producto" required>
+                <option value="">Seleccionar Producto...</option>
+                {% for p in productos %}
+                <option value="{{ p.nombre }}">{{ p.nombre }} (Stock actual: {{ p.stock }})</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="cantidad" placeholder="Cantidad" required>
+            <input type="number" step="0.01" name="total" placeholder="Costo Total" required>
         </div>
-        <button type="submit" style="background: #22c55e; width: 100%; margin-top: 20px; font-weight: bold; padding: 12px;">
-            Confirmar Compra y Sumar al Stock
+        <button type="submit" style="background: #3b82f6; width: 100%; margin-top: 15px; font-weight: bold; padding: 12px;">
+            Cargar al Inventario
         </button>
     </form>
 </div>
 
-<hr style="margin: 40px 0; opacity: 0.1;">
+<hr style="opacity: 0.1; margin: 30px 0;">
 
-<!-- 3. LISTADO DE BOLETAS DE COMPRA -->
-<h2>📄 Historial de Inversión</h2>
+<h2>📄 Boletas de Entrada (Historial)</h2>
 <div class="grid-productos">
     {% for h in historial %}
     <div class="card card-compra">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <small style="color: #64748b;">{{ h.fecha }}</small>
-                <h3 style="margin: 5px 0;">{{ h.lugar }}</h3>
-            </div>
-            <a href="/eliminar_compra/{{ h.id }}" onclick="return confirm('¿Anular compra? Esto restará el stock cargado.')" title="Anular">
-                ❌
-            </a>
+        <div style="display: flex; justify-content: space-between;">
+            <small style="color: #64748b;">{{ h.fecha }}</small>
+            <a href="/eliminar_compra/{{ h.id }}" onclick="return confirm('¿Anular compra? Se restará el stock.')" style="text-decoration: none;">❌</a>
         </div>
+        <h3 style="margin: 10px 0 5px 0;">{{ h.lugar }}</h3>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 15px;">📍 {{ h.direccion }}</p>
         
-        <div style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between;">
+        <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
                 <b>{{ h.producto }}</b>
-                <span>x{{ h.cantidad }}</span>
+                <span style="font-size: 14px;">Cant: {{ h.cantidad }}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                <span class="badge-costo">Costo p/ unidad: ${{ (h.total / h.cantidad)|round(2) }}</span>
-                <b style="color: #22c55e;">${{ h.total }}</b>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <span class="badge-unitario">Costo x Unidad: ${{ (h.total / h.cantidad)|round(2) }}</span>
+                <b style="color: #22c55e; font-size: 18px;">${{ h.total }}</b>
             </div>
         </div>
-        
-        <p style="font-size: 12px; color: #64748b; margin: 0;">📍 {{ h.direccion if h.direccion else 'Sin dirección' }}</p>
     </div>
     {% endfor %}
 </div>
