@@ -234,7 +234,32 @@ def productos_json():
     db.close()
 
     return jsonify([dict(p) for p in productos])
+@app.route("/ganancias")
+def ganancias():
+    db = get_db()
 
+    ventas_mes = db.execute("""
+        SELECT SUM(total)
+        FROM ventas
+        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
+    """).fetchone()[0] or 0
+
+    compras_mes = db.execute("""
+        SELECT SUM(total)
+        FROM compras
+        WHERE strftime('%Y-%m', fecha)=strftime('%Y-%m','now','localtime')
+    """).fetchone()[0] or 0
+
+    ganancia_mes = ventas_mes - compras_mes
+
+    db.close()
+
+    return render_template(
+        "ganancias.html",
+        ventas_mes=ventas_mes,
+        compras_mes=compras_mes,
+        ganancia_mes=ganancia_mes
+    )
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
