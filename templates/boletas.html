@@ -7,21 +7,27 @@
 
 <body>
 
-<h1>💳 Boletas</h1>
+<h1>💳 Boletas (Ventas)</h1>
 
 <div class="nav">
     <a href="/"><button>🏠 Volver</button></a>
+    <a href="/dashboard"><button>📊 Dashboard</button></a>
 </div>
 
 <div class="container">
 
     {% for b in boletas %}
+
         <div class="card">
-            👤 {{b['nombre']}}<br>
-            💰 Total: ${{b['total']}}<br>
-            💵 Pagado: ${{b['pagado']}}<br>
-            📌 Estado: {{b['estado']}}
+
+            <h3>🧾 Venta #{{b['id']}}</h3>
+
+            <p>💰 Total: ${{b['total']}}</p>
+
+            <p>📅 Fecha: {{b['fecha']}}</p>
+
         </div>
+
     {% endfor %}
 
 </div>
