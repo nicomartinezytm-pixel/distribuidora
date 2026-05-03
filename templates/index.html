@@ -7,15 +7,21 @@
 
 <body>
 
-<h1>📦 Distribuidora</h1>
+<h1>📦 Distribuidora App</h1>
 
-<a href="/vender"><button>🧾 Ventas</button></a>
-<a href="/dashboard"><button>📊 Dashboard</button></a>
-<a href="/boletas"><button>💳 Boletas</button></a>
+<!-- ================= MENU PRINCIPAL ================= -->
+<div style="margin-bottom:20px;">
+
+    <a href="/vender"><button>🧾 Ventas</button></a>
+    <a href="/dashboard"><button>📊 Dashboard</button></a>
+    <a href="/boletas"><button>💳 Boletas</button></a>
+    <a href="/clientes"><button>👥 Clientes</button></a>
+
+</div>
 
 <hr>
 
-<!-- ===================== AGREGAR PRODUCTO ===================== -->
+<!-- ================= AGREGAR PRODUCTO ================= -->
 <h2>➕ Agregar Producto</h2>
 
 <form method="POST" action="/agregar_producto">
@@ -28,16 +34,18 @@
 
     <label>Tipo de producto:</label>
     <select name="tipo_precio" id="tipo" onchange="mostrarCampos()">
+
         <option value="unidad">Unidad</option>
         <option value="cantidad">Pack / Cantidad</option>
         <option value="oferta">Oferta</option>
+
     </select>
 
     <br><br>
 
     <!-- PACK -->
     <div id="campo-cantidad" style="display:none;">
-        <input name="unidades" placeholder="¿Cuántas unidades trae el pack?">
+        <input name="unidades" placeholder="Unidades por pack">
     </div>
 
     <!-- OFERTA -->
@@ -48,29 +56,34 @@
     <br>
 
     <button type="submit">Guardar producto</button>
+
 </form>
 
 <hr>
 
-<!-- ===================== LISTA PRODUCTOS ===================== -->
+<!-- ================= LISTA PRODUCTOS ================= -->
 <h2>📦 Productos</h2>
 
 {% for p in productos %}
     <div style="border:1px solid #ccc; padding:10px; margin:5px;">
+
         <b>{{p['nombre']}}</b><br>
-        Precio: ${{p['precio']}}<br>
-        Stock: {{p['stock']}}<br>
-        Tipo: {{p['tipo_precio']}}<br>
-        Unidades: {{p['unidades']}}<br>
-        Oferta: {{p['oferta_unidades']}}<br>
+        💰 Precio: ${{p['precio']}}<br>
+        📦 Stock: {{p['stock']}}<br>
+        ⚙ Tipo: {{p['tipo_precio']}}<br>
+        🔢 Unidades: {{p['unidades']}}<br>
+        🎁 Oferta: {{p['oferta_unidades']}}
+
+        <br><br>
 
         <a href="/eliminar_producto/{{p['id']}}">
             <button>❌ Eliminar</button>
         </a>
+
     </div>
 {% endfor %}
 
-<!-- ===================== JS ===================== -->
+<!-- ================= SCRIPT ================= -->
 <script>
 function mostrarCampos() {
     let tipo = document.getElementById("tipo").value;
