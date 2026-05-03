@@ -61,6 +61,45 @@
         {% endfor %}
     </div>
 
+    <!-- =============================== -->
+    <!-- 🛒 NUEVA SECCIÓN COMPRAS -->
+    <!-- =============================== -->
+
+    <div class="card">
+        <h2>🛒 Compras a Mayoristas</h2>
+
+        <input type="text" id="productoCompra" placeholder="Producto (ej: Alfajores)">
+        <input type="text" id="proveedorCompra" placeholder="Proveedor">
+        <input type="text" id="lugarCompra" placeholder="Lugar (ej: Carrefour)">
+        <input type="number" id="cantidadCompra" placeholder="Cantidad">
+        <input type="number" id="precioCompra" placeholder="Precio unitario">
+
+        <button onclick="agregarCompra()">➕ Agregar compra</button>
+
+        <br><br>
+
+        <table border="1" cellpadding="6">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Proveedor</th>
+                    <th>Lugar</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Total</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+
+            <tbody id="tablaCompras"></tbody>
+        </table>
+
+        <h3>💰 Total invertido: $<span id="totalGeneral">0</span></h3>
+
+        <p>📊 Compras registradas: <span id="totalItems">0</span></p>
+        <p>🔥 Compra más cara: $<span id="masCara">0</span></p>
+    </div>
+
 </div>
 
 <script>
@@ -76,6 +115,62 @@ function mostrar(){
     if(t=="oferta"){
         document.getElementById("extra2").style.display = "block";
     }
+}
+
+/* ===============================
+   🛒 COMPRAS A MAYORISTAS
+================================ */
+
+let totalGeneral = 0;
+let totalItems = 0;
+let compraMasCara = 0;
+
+function agregarCompra() {
+
+    let producto = document.getElementById("productoCompra").value;
+    let proveedor = document.getElementById("proveedorCompra").value;
+    let lugar = document.getElementById("lugarCompra").value;
+    let cantidad = parseFloat(document.getElementById("cantidadCompra").value);
+    let precio = parseFloat(document.getElementById("precioCompra").value);
+
+    if (!producto || !proveedor || !lugar || isNaN(cantidad) || isNaN(precio)) {
+        alert("Completa todos los campos");
+        return;
+    }
+
+    let total = cantidad * precio;
+    let fecha = new Date().toLocaleDateString();
+
+    totalGeneral += total;
+    totalItems++;
+
+    if (total > compraMasCara) {
+        compraMasCara = total;
+    }
+
+    let fila = `
+        <tr>
+            <td>${producto}</td>
+            <td>${proveedor}</td>
+            <td>${lugar}</td>
+            <td>${cantidad}</td>
+            <td>$${precio}</td>
+            <td>$${total}</td>
+            <td>${fecha}</td>
+        </tr>
+    `;
+
+    document.getElementById("tablaCompras").innerHTML += fila;
+    document.getElementById("totalGeneral").innerText = totalGeneral;
+    document.getElementById("totalItems").innerText = totalItems;
+    document.getElementById("masCara").innerText = compraMasCara;
+
+    // limpiar inputs
+    document.getElementById("productoCompra").value = "";
+    document.getElementById("proveedorCompra").value = "";
+    document.getElementById("lugarCompra").value = "";
+    document.getElementById("cantidadCompra").value = "";
+    document.getElementById("precioCompra").value = "";
 }
 </script>
 
