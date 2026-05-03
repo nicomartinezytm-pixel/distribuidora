@@ -1,35 +1,43 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Cobranzas y Boletas</h2>
+<h2>Cobranzas</h2>
 {% for v in boletas %}
 <div class="card">
-    <div style="display:flex; justify-content:space-between;">
-        <b>{{ v.cliente }}</b>
+    <div style="display:flex; justify-content:space-between; align-items: center;">
+        <b style="font-size: 18px;">{{ v.cliente }}</b>
         <span class="badge {{ v.estado }}">{{ v.estado.upper() }}</span>
     </div>
-    <p style="margin:5px 0; font-size:14px; color:#94a3b8;">{{ v.direccion }}</p>
-    <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:5px; margin:10px 0;">
+    <p style="color: #94a3b8; font-size: 14px;">{{ v.direccion }}</p>
+    
+    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin: 10px 0;">
         {% for item in v.detalle|fromjson %}
-        <small>{{ item.nombre }} x{{ item.cantidad }}</small><br>
+        <div style="display:flex; justify-content:space-between; font-size: 13px;">
+            <span>{{ item.nombre }} x{{ item.cantidad }}</span>
+            <span>${{ item.precio * item.cantidad }}</span>
+        </div>
         {% endfor %}
     </div>
-    <b>Total: ${{ v.total }}</b> | <b style="color:#ef4444;">Saldo: ${{ v.saldo }}</b>
+
+    <div style="display:flex; justify-content:space-between; border-top: 1px solid #334155; pt: 10px;">
+        <span>Total: ${{ v.total }}</span>
+        <b style="color:#ef4444;">Debe: ${{ v.saldo }}</b>
+    </div>
     
-    <div style="display:flex; gap:10px; margin-top:10px;">
+    <div style="display:flex; gap:10px; margin-top:15px;">
         <button onclick="document.getElementById('m-{{v.id}}').style.display='block'" style="flex:1;">Pagar</button>
-        <button onclick="enviarWA('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" style="flex:1; background:#22c55e;">WhatsApp</button>
+        <button onclick="enviarWA('{{ v.whatsapp }}', '{{ v.cliente }}', '{{ v.saldo }}')" style="flex:1; background:#22c55e; border:none; color:white;">WhatsApp</button>
     </div>
 </div>
 
 <!-- Modal Pago -->
 <div id="m-{{v.id}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
-    <div class="card" style="margin:20%; background:#1e293b;">
+    <div class="card" style="margin:20% auto; width: 80%; background:#1e293b;">
         <h3>Registrar Pago</h3>
         <form action="/registrar_pago" method="POST">
             <input type="hidden" name="id" value="{{ v.id }}">
-            <input type="number" step="0.01" name="monto" placeholder="Monto a cobrar" required>
-            <button type="submit">Confirmar</button>
-            <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'">Cerrar</button>
+            <input type="number" step="0.01" name="monto" placeholder="Monto a cobrar" required style="width:100%; margin-bottom:10px;">
+            <button type="submit" style="width:100%; background:#3b82f6;">Confirmar Pago</button>
+            <button type="button" onclick="this.parentElement.parentElement.parentElement.style.display='none'" style="width:100%; background:transparent; border:none; color:white; margin-top:10px;">Cancelar</button>
         </form>
     </div>
 </div>
@@ -37,10 +45,25 @@
 
 <script>
 function enviarWA(tel, cli, saldo) {
-    let num = tel.replace(/\D/g, ''); // Limpia el número
-    if(num.length < 8) return alert("Número de WhatsApp no válido");
-    let msj = encodeURIComponent(`Hola ${cli}, tenés un saldo pendiente de $${saldo}.`);
-    window.open(`https://wa.me/${num}?text=${msj}`, '_blank');
+    // 1. Limpiar el número de espacios, guiones y paréntesis
+    let num = tel.replace(/\D/g, ''); 
+    
+    // 2. Si el número empieza con '3' (muy común en Arg) y no tiene el '549', se lo agregamos
+    if (num.startsWith('3') && num.length <= 10) {
+        num = '549' + num;
+    } 
+    // 3. Si no tiene código de país en general, le ponemos el 54 por defecto
+    else if (!num.startsWith('54') && num.length > 0) {
+        num = '54' + num;
+    }
+
+    if(num.length < 10) {
+        return alert("El número de teléfono parece estar incompleto.");
+    }
+
+    let msj = encodeURIComponent(`Hola ${cli}, te escribo para recordarte tu saldo pendiente de $${saldo}.`);
+    // Usamos api.whatsapp.com que es más compatible en algunos navegadores
+    window.open(`https://api.whatsapp.com/send?phone=${num}&text=${msj}`, '_blank');
 }
 </script>
 {% endblock %}
