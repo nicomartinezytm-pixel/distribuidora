@@ -2,33 +2,27 @@
 <html>
 <head>
     <title>Clientes</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
 
-<h1>👥 Cuenta Corriente</h1>
+<h1>👥 Clientes</h1>
 
-<a href="/"><button>⬅ Volver</button></a>
+<div class="nav">
+    <a href="/"><button>🏠 Inicio</button></a>
+</div>
 
-<hr>
+<div class="container">
 
-<h2>💰 Clientes y compras</h2>
+    {% for c in clientes %}
+        <div class="card">
+            👤 {{c['nombre']}}<br>
+            💰 Compras: ${{c['total_comprado']}}
+        </div>
+    {% endfor %}
 
-{% for c in clientes %}
-    <div style="border:1px solid #ccc; padding:10px; margin:5px;">
-        <b>{{c['nombre']}}</b><br>
-        Total comprado: ${{c['total_comprado']}}
-    </div>
-{% endfor %}
-
-<hr>
-
-<h2>⚠️ Deudas</h2>
-
-{% for d in deudas %}
-    <div style="color:red;">
-        {{d['nombre']}} - debe ${{d['deuda']}}
-    </div>
-{% endfor %}
+</div>
 
 </body>
 </html>
