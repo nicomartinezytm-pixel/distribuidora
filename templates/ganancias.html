@@ -7,51 +7,15 @@
 
 <body>
 
+{% extends "base.html" %}
+{% block content %}
+
 <h1>💰 Ganancias</h1>
 
-<div class="nav">
-    <a href="/"><button>🏠 Inicio</button></a>
-    <a href="/dashboard"><button>📊 Dashboard</button></a>
-    <a href="/vender"><button>🧾 Ventas</button></a>
-    <a href="/clientes"><button>👥 Clientes</button></a>
+<div class="card">
+<p>Ventas mes: ${{ ventas_mes or 0 }}</p>
+<p>Compras mes: ${{ compras_mes or 0 }}</p>
+<h2>Ganancia: ${{ ganancia_mes or 0 }}</h2>
 </div>
 
-<div class="container">
-
-    <div class="card">
-        <h2>📅 Resumen Mensual</h2>
-
-        <p>💰 Total ventas del mes: ${{ ventas_mes or 0 }}</p>
-        <p>🛒 Total compras del mes: ${{ compras_mes or 0 }}</p>
-
-        <hr>
-
-        <h2>🔥 Ganancia neta del mes: ${{ ganancia_mes or 0 }}</h2>
-    </div>
-
-    <div class="card">
-        <h2>📊 Análisis</h2>
-
-        <p>
-            📦 Las ventas representan ingresos.<br>
-            🛒 Las compras representan inversión.<br><br>
-
-            🔥 La ganancia es la diferencia real del negocio.
-        </p>
-    </div>
-
-    <div class="card">
-        <h2>🚀 Próximas mejoras</h2>
-
-        <ul>
-            <li>📈 Gráficos mensuales</li>
-            <li>📊 Comparación entre meses</li>
-            <li>📦 Ganancia por producto</li>
-            <li>🏪 Análisis por proveedor</li>
-        </ul>
-    </div>
-
-</div>
-
-</body>
-</html>
+{% endblock %}
