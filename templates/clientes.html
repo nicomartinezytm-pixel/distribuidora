@@ -2,68 +2,104 @@
 {% block content %}
 
 <style>
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-    .badge-oro { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
-    .badge-fiel { background: #dcfce7; color: #166534; border: 1px solid #22c55e; }
-    .stat-box { text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; flex: 1; margin: 5px; border: 1px solid rgba(255,255,255,0.1); }
-    .stat-val { display: block; font-size: 16px; font-weight: bold; color: white; }
-    .stat-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+    .grid-clientes { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+        gap: 20px; 
+        margin-top: 20px; 
+    }
+    .card-cliente {
+        border-top: 4px solid #3b82f6;
+    }
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    .deuda-highlight {
+        background: rgba(239, 68, 68, 0.1);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        margin-top: 10px;
+    }
+    .btn-whatsapp {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #25d366;
+        color: white;
+        text-decoration: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: 0.3s;
+        margin-top: 15px;
+    }
+    .btn-whatsapp:hover {
+        background: #128c7e;
+        transform: translateY(-2px);
+    }
+    .btn-disabled {
+        background: #334155;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+    .badge-compras {
+        background: #334155;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+    }
 </style>
 
-<h1>👥 Inteligencia de Clientes</h1>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h1>👥 Cartera de Clientes</h1>
+    <span style="color: #94a3b8;">Ordenado por mayor deuda</span>
+</div>
 
-<div class="container">
+<div class="grid-clientes">
     {% for c in clientes %}
-    <div class="card">
+    <div class="card card-cliente">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <h2 style="margin:0;">👤 {{ c['cliente'] }}</h2>
-                <small style="color: #94a3b8;">📍 {{ c['direccion'] }}</small>
-            </div>
-            <div>
-                {% if c['total_gastado'] > 20000 %}
-                    <span class="badge badge-oro">🏆 VIP Oro</span>
-                {% endif %}
-                {% if c['total_compras'] >= 3 %}
-                    <span class="badge badge-fiel">⭐ Frecuente</span>
-                {% endif %}
+            <h2 style="margin: 0; color: #f8fafc;">{{ c['cliente'] }}</h2>
+            <span class="badge-compras">{{ c['total_compras'] }} pedidos</span>
+        </div>
+        
+        <p style="color: #94a3b8; font-size: 13px; margin: 5px 0 15px 0;">📍 {{ c['direccion'] if c['direccion'] else 'Sin dirección' }}</p>
+
+        <div class="info-row">
+            <span>Total histórico:</span>
+            <span>${{ c['total_gastado'] }}</span>
+        </div>
+
+        <div class="deuda-highlight">
+            <div class="info-row" style="margin: 0;">
+                <span style="color: #ef4444; font-weight: bold;">Deuda Pendiente:</span>
+                <b style="color: #ef4444; font-size: 18px;">${{ c['deuda_total'] }}</b>
             </div>
         </div>
 
-        <hr style="opacity: 0.1; margin: 15px 0;">
-
-        <div style="display: flex; justify-content: space-between;">
-            <div class="stat-box">
-                <span class="stat-label">Inversión</span>
-                <span class="stat-val" style="color: #22c55e;">${{ c['total_gastado'] }}</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Promedio</span>
-                <span class="stat-val">${{ c['promedio_compra'] }}</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Pedidos</span>
-                <span class="stat-val">{{ c['total_compras'] }}</span>
-            </div>
-        </div>
-
-        <div style="margin-top: 15px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 10px; border-left: 4px solid #3b82f6;">
-            <p style="margin:0; font-size: 13px;">
-                🔥 <b>Más comprado:</b> 
-                <span style="color: #60a5fa; font-weight: bold;">{{ c['producto_top'] if c['producto_top'] else 'Sin datos' }}</span>
-            </p>
-        </div>
-
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <a href="https://wa.me/?text=Hola%20{{ c['cliente'] }},%20te%20escribimos%20de%20la%20Distribuidora.%20¡Tenemos%20novedades!" 
-               style="flex: 1;" target="_blank">
-                <button style="background: #25d366;">💬 WhatsApp</button>
+        {% if c['telefono'] %}
+            {# Formateamos el mensaje para WhatsApp #}
+            {% set mensaje = "Hola " ~ c['cliente'] ~ ", te hablamos de la distribuidora. Te escribimos por tu saldo pendiente de $" ~ c['deuda_total'] ~ ". ¿Cómo estás?" %}
+            <a href="https://wa.me/{{ c['telefono'] }}?text={{ mensaje|urlencode }}" 
+               target="_blank" 
+               class="btn-whatsapp">
+                <span>💬 Enviar Recordatorio</span>
             </a>
-        </div>
+        {% else %}
+            <div class="btn-whatsapp btn-disabled">
+                <span>🚫 Sin Teléfono registrado</span>
+            </div>
+        {% endif %}
     </div>
     {% else %}
-    <div class="card" style="text-align: center; padding: 40px;">
-        <p style="color: #94a3b8;">Aún no hay clientes con historial de ventas.</p>
+    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+        <h3 style="color: #64748b;">Aún no hay clientes registrados.</h3>
+        <p>Los clientes aparecen aquí automáticamente cuando realizas una venta.</p>
     </div>
     {% endfor %}
 </div>
