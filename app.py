@@ -159,7 +159,26 @@ def finalizar_venta():
     return jsonify({"ok": True})
 
 
-# ---------------- BOLETAS (🔥 FIX REAL DEL 404) ----------------
+# ---------------- CLIENTES (CUENTA CORRIENTE) ----------------
+@app.route("/clientes")
+def clientes():
+    db = get_db()
+
+    clientes = db.execute("""
+        SELECT c.id, c.nombre,
+        COALESCE(SUM(v.total), 0) as total_comprado
+        FROM clientes c
+        LEFT JOIN ventas v ON v.cliente_id = c.id
+        GROUP BY c.id
+        ORDER BY total_comprado DESC
+    """).fetchall()
+
+    db.close()
+
+    return render_template("clientes.html", clientes=clientes)
+
+
+# ---------------- BOLETAS ----------------
 @app.route("/boletas")
 def boletas():
     db = get_db()
