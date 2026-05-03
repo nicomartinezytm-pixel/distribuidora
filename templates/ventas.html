@@ -3,42 +3,74 @@
 <h2>Nueva Venta</h2>
 <div class="card">
     <input type="text" id="busqueda" placeholder="🔍 Buscar producto..." oninput="filtrar()">
-    <div id="lista-prods" style="max-height: 150px; overflow-y: auto;"></div>
+    <div id="lista-prods" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px;"></div>
 </div>
 
 <div class="card">
     <h3>Carrito</h3>
-    <div id="carrito-items" style="margin-bottom: 15px;"></div>
-    
-    <div style="background: #0f172a; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-        <label>Datos del Cliente:</label>
-        <input type="text" id="cliente" placeholder="Nombre completo">
-        <input type="text" id="direccion" placeholder="Dirección de entrega">
-        <input type="tel" id="whatsapp" placeholder="WhatsApp (ej: 351...)">
-    </div>
-
-    <button onclick="enviarVenta()" style="background: #22c55e; height: 70px; font-size: 20px;">
-        CONFIRMAR VENTA ($<span id="total-v">0</span>)
-    </button>
+    <div id="carrito-items"></div>
+    <hr>
+    <input type="text" id="cliente" placeholder="Nombre del Cliente">
+    <input type="text" id="direccion" placeholder="Dirección">
+    <input type="tel" id="whatsapp" placeholder="WhatsApp">
+    <button onclick="enviarVenta()" style="background: #22c55e; margin-top: 10px;">CONFIRMAR VENTA ($<span id="total-v">0</span>)</button>
 </div>
 
 <script>
-// ... (mismo script de filtrado anterior, pero actualizamos enviarVenta)
+let inventario = [];
+let carrito = [];
+
+// Cargar productos al abrir la página
+fetch('/productos_json').then(res => res.json()).then(data => { inventario = data; });
+
+function filtrar() {
+    const term = document.getElementById('busqueda').value.toLowerCase();
+    const lista = document.getElementById('lista-prods');
+    lista.innerHTML = '';
+    if(term.length < 1) return;
+
+    inventario.filter(p => p.nombre.toLowerCase().includes(term)).forEach(p => {
+        let div = document.createElement('div');
+        div.style = "padding: 15px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between;";
+        div.innerHTML = `<span>${p.nombre} ($${p.precio})</span> <button onclick="agregar(${p.id})" style="width:auto; margin:0; padding: 5px 10px;">+</button>`;
+        lista.appendChild(div);
+    });
+}
+
+function agregar(id) {
+    const prod = inventario.find(p => p.id === id);
+    const enCarrito = carrito.find(item => item.id === id);
+    if(enCarrito) { enCarrito.cantidad++; } 
+    else { carrito.push({...prod, cantidad: 1}); }
+    actualizarCarrito();
+}
+
+function actualizarCarrito() {
+    const lista = document.getElementById('carrito-items');
+    lista.innerHTML = '';
+    let total = 0;
+    carrito.forEach((item, index) => {
+        total += item.precio * item.cantidad;
+        lista.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <span>${item.nombre} x${item.cantidad}</span>
+            <span>$${item.precio * item.cantidad}</span>
+        </div>`;
+    });
+    document.getElementById('total-v').innerText = total;
+}
+
 function enviarVenta() {
-    const data = {
-        cliente: {
-            nombre: document.getElementById('cliente').value,
-            direccion: document.getElementById('direccion').value,
-            whatsapp: document.getElementById('whatsapp').value
-        },
-        carrito: carrito
+    const c = {
+        nombre: document.getElementById('cliente').value,
+        direccion: document.getElementById('direccion').value,
+        whatsapp: document.getElementById('whatsapp').value
     };
-    if(!data.cliente.nombre || carrito.length === 0) return alert('Faltan datos');
+    if(!c.nombre || carrito.length === 0) return alert("Faltan datos o carrito vacío");
     
     fetch('/finalizar_venta', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
+        body: JSON.stringify({cliente: c, carrito: carrito})
     }).then(() => window.location.href = '/boletas');
 }
 </script>
