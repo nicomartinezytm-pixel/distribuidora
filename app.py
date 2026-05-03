@@ -12,46 +12,51 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+# Esta función crea todo de cero con las columnas correctas
 def init_db():
     db = get_db()
-    # Crear tablas si no existen
+    # TABLA PRODUCTOS (Con unidad y oferta desde el inicio)
     db.execute("""
         CREATE TABLE IF NOT EXISTS productos (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            nombre TEXT, precio REAL, stock INTEGER, unidad TEXT, oferta TEXT
+            nombre TEXT NOT NULL, 
+            precio REAL NOT NULL, 
+            stock INTEGER NOT NULL, 
+            unidad TEXT DEFAULT 'Unidad', 
+            oferta TEXT DEFAULT ''
         )""")
     
-    # --- ARREGLO PARA EL ERROR 500 ---
-    # Esto revisa si faltan las columnas nuevas en una base de datos vieja
-    cursor = db.execute("PRAGMA table_info(productos)")
-    columnas = [column[1] for column in cursor.fetchall()]
-    
-    if "unidad" not in columnas:
-        db.execute("ALTER TABLE productos ADD COLUMN unidad TEXT DEFAULT 'Unidad'")
-    if "oferta" not in columnas:
-        db.execute("ALTER TABLE productos ADD COLUMN oferta TEXT DEFAULT ''")
-    
-    # Tablas de Compras y Ventas
+    # TABLA COMPRAS (Abastecimiento de la distribuidora)
     db.execute("""
         CREATE TABLE IF NOT EXISTS compras (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            lugar TEXT, direccion TEXT, producto TEXT, 
-            cantidad INTEGER, total REAL, fecha TEXT DEFAULT (DATETIME('now','localtime'))
+            lugar TEXT, 
+            direccion TEXT, 
+            producto TEXT, 
+            cantidad INTEGER, 
+            total REAL, 
+            fecha TEXT DEFAULT (DATETIME('now','localtime'))
         )""")
     
+    # TABLA VENTAS
     db.execute("""
         CREATE TABLE IF NOT EXISTS ventas (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            cliente TEXT, direccion TEXT, telefono TEXT, detalle TEXT, 
-            total REAL, pagado REAL DEFAULT 0, saldo REAL DEFAULT 0, 
-            estado TEXT DEFAULT 'fiado', fecha TEXT DEFAULT (DATETIME('now','localtime'))
+            cliente TEXT, 
+            direccion TEXT, 
+            telefono TEXT, 
+            detalle TEXT, 
+            total REAL, 
+            pagado REAL DEFAULT 0, 
+            saldo REAL DEFAULT 0, 
+            estado TEXT DEFAULT 'fiado', 
+            fecha TEXT DEFAULT (DATETIME('now','localtime'))
         )""")
     db.commit()
     db.close()
 
+# Ejecutamos la creación de tablas
 init_db()
-
-# --- RUTAS ---
 
 @app.route("/")
 def index():
@@ -64,9 +69,9 @@ def index():
 def agregar_producto():
     try:
         db = get_db()
-        nombre = request.form["nombre"]
-        precio = float(request.form["precio"])
-        stock = int(request.form["stock"])
+        nombre = request.form.get("nombre")
+        precio = float(request.form.get("precio", 0))
+        stock = int(request.form.get("stock", 0))
         unidad = request.form.get("unidad", "Unidad")
         oferta = request.form.get("oferta", "")
         
@@ -76,7 +81,8 @@ def agregar_producto():
         db.close()
         return redirect("/")
     except Exception as e:
-        return f"Error al guardar: {e}", 500
+        # Esto te dirá exactamente qué falla si vuelve a pasar
+        return f"Error detallado: {e}", 500
 
 @app.route("/compras")
 def compras():
@@ -89,11 +95,12 @@ def compras():
 @app.route("/agregar_compra", methods=["POST"])
 def agregar_compra():
     db = get_db()
-    lugar = request.form["lugar"]
-    direccion = request.form["direccion"]
-    producto = request.form["producto"]
-    cantidad = int(request.form["cantidad"])
-    total = float(request.form["total"])
+    lugar = request.form.get("lugar")
+    direccion = request.form.get("direccion")
+    producto = request.form.get("producto")
+    cantidad = int(request.form.get("cantidad", 0))
+    total = float(request.form.get("total", 0))
+    
     db.execute("INSERT INTO compras (lugar, direccion, producto, cantidad, total) VALUES (?, ?, ?, ?, ?)",
                (lugar, direccion, producto, cantidad, total))
     db.execute("UPDATE productos SET stock = stock + ? WHERE nombre = ?", (cantidad, producto))
