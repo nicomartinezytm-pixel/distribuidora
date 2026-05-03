@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, redirect, jsonify
 import sqlite3
 import json
 import os
-from datetime import datetime
 
 app = Flask(__name__)
 
@@ -65,7 +64,7 @@ def init_db():
 init_db()
 
 
-# ---------------- HOME ----------------
+# ---------------- HOME (ESTO ES LO QUE TE FALTABA BIEN) ----------------
 @app.route("/")
 def index():
     db = get_db()
@@ -74,7 +73,7 @@ def index():
     return render_template("index.html", productos=productos)
 
 
-# ---------------- PRODUCTOS JSON ----------------
+# ---------------- PRODUCTOS JSON (VENTAS) ----------------
 @app.route("/productos_json")
 def productos_json():
     db = get_db()
@@ -83,7 +82,7 @@ def productos_json():
     return jsonify([dict(p) for p in productos])
 
 
-# ---------------- AGREGAR PRODUCTO ----------------
+# ---------------- AGREGAR PRODUCTO (DESDE HOME) ----------------
 @app.route("/agregar_producto", methods=["POST"])
 def agregar_producto():
     db = get_db()
@@ -151,7 +150,6 @@ def finalizar_venta():
 
     cursor = db.cursor()
 
-    # crear cliente
     cursor.execute("""
         INSERT INTO clientes (nombre, telefono, direccion)
         VALUES (?, ?, ?)
@@ -161,7 +159,6 @@ def finalizar_venta():
 
     total = 0
 
-    # calcular total + stock
     for item in carrito:
         prod = db.execute("SELECT precio FROM productos WHERE id=?", (item["id"],)).fetchone()
         subtotal = prod["precio"] * item["cantidad"]
@@ -173,7 +170,6 @@ def finalizar_venta():
             WHERE id=?
         """, (item["cantidad"], item["id"]))
 
-    # venta
     db.execute("""
         INSERT INTO ventas (cliente_id, total)
         VALUES (?, ?)
@@ -185,7 +181,7 @@ def finalizar_venta():
     return jsonify({"ok": True})
 
 
-# ---------------- BOLETAS (FIADO) ----------------
+# ---------------- BOLETAS ----------------
 @app.route("/boletas")
 def boletas():
     db = get_db()
@@ -211,28 +207,6 @@ def boletas():
     return render_template("boletas.html", boletas=boletas, alertas=alertas)
 
 
-@app.route("/crear_boleta", methods=["POST"])
-def crear_boleta():
-    db = get_db()
-
-    data = request.get_json()
-
-    cliente_id = data["cliente_id"]
-    total = data["total"]
-    pagado = data.get("pagado", 0)
-    vencimiento = data.get("vencimiento", "2026-01-01")
-
-    db.execute("""
-        INSERT INTO boletas (cliente_id, total, pagado, vencimiento)
-        VALUES (?, ?, ?, ?)
-    """, (cliente_id, total, pagado, vencimiento))
-
-    db.commit()
-    db.close()
-
-    return jsonify({"ok": True})
-
-
 @app.route("/pagar_boleta/<int:id>", methods=["POST"])
 def pagar_boleta(id):
     db = get_db()
@@ -242,7 +216,6 @@ def pagar_boleta(id):
     boleta = db.execute("SELECT * FROM boletas WHERE id=?", (id,)).fetchone()
 
     nuevo_pagado = boleta["pagado"] + pago
-
     estado = "pagado" if nuevo_pagado >= boleta["total"] else "pendiente"
 
     db.execute("""
@@ -277,11 +250,13 @@ def dashboard():
 
     db.close()
 
-    return render_template("dashboard.html",
-                           total=total,
-                           ventas=ventas,
-                           boletas_pendientes=boletas_pendientes,
-                           deuda_total=deuda_total)
+    return render_template(
+        "dashboard.html",
+        total=total,
+        ventas=ventas,
+        boletas_pendientes=boletas_pendientes,
+        deuda_total=deuda_total
+    )
 
 
 # ---------------- RUN ----------------
