@@ -1,20 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Distribuidora Pro</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Distribuidora</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --accent: #3b82f6;
+        }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            padding-bottom: 80px; /* Espacio para el menú móvil */
+        }
+        nav { 
+            background: var(--card); 
+            padding: 15px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 15px; 
+            border-bottom: 1px solid #334155;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        nav a { 
+            color: white; 
+            text-decoration: none; 
+            font-weight: bold; 
+            padding: 8px 15px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        nav a:hover { background: var(--accent); }
+        
+        /* Estilos generales para las cards y botones que usamos en todo el sitio */
+        .container { max-width: 1000px; margin: auto; padding: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); margin-bottom: 20px; }
+        input, select, button { 
+            padding: 10px; 
+            border-radius: 6px; 
+            border: 1px solid #334155; 
+            background: #0f172a; 
+            color: white; 
+        }
+        button { cursor: pointer; border: none; background: var(--accent); }
+        .grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    </style>
 </head>
 <body>
+
+    <nav>
+        <a href="/">📦 Inventario</a>
+        <a href="/vender">🛒 Nueva Venta</a>
+        <a href="/boletas">📄 Boletas</a>
+        <a href="/clientes">👥 Clientes</a>
+        <!-- AQUÍ ESTÁ EL BOTÓN QUE FALTABA -->
+        <a href="/compras" style="background: #1e293b; border: 1px solid #3b82f6;">🏭 Compras</a>
+        <a href="/dashboard">📊 Panel</a>
+    </nav>
+
     <div class="container">
         {% block content %}{% endblock %}
     </div>
-    <div class="bottom-nav">
-        <a href="/">🏠<br>Inicio</a>
-        <a href="/vender">💰<br>Ventas</a>
-        <a href="/boletas">🧾<br>Boletas</a>
-        <a href="/dashboard">📊<br>Stats</a>
-        <a href="/clientes">👥<br>Clientes</a>
-    </div>
+
 </body>
 </html>
