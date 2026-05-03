@@ -2,72 +2,64 @@
 {% block content %}
 
 <style>
-    .alerta-stock { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-    .card-compra { border-left: 4px solid #3b82f6; position: relative; }
-    .badge-unitario { background: #1e293b; color: #3b82f6; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-    .form-compras { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 30px; }
+    .form-compra { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    @media (max-width: 600px) { .form-compra { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1e293b; border-radius: 10px; overflow: hidden; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    th { background: #334155; color: #94a3b8; font-size: 13px; }
 </style>
 
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <h1>🏭 Panel de Abastecimiento</h1>
-    <span style="color: #94a3b8;">Control de Gastos y Stock</span>
-</div>
+<h1>🛒 Registrar Abastecimiento</h1>
 
-<!-- ALERTAS DE STOCK BAJO -->
-<div class="alerta-stock">
-    <span>⚠️</span>
-    <span><strong>Recordatorio:</strong> Revisar productos con stock menor a 10 unidades antes de confirmar nuevos pedidos al mayorista.</span>
-</div>
-
-<!-- FORMULARIO DE CARGA -->
-<div class="form-compras">
-    <h3 style="margin-top: 0; color: #3b82f6;">📥 Registrar Compra a Mayorista</h3>
+<div class="card">
     <form action="/agregar_compra" method="POST">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-            <input type="text" name="lugar" placeholder="Nombre del Mayorista (ej: Macro)" required>
-            <input type="text" name="direccion" placeholder="Dirección / Ciudad">
-        </div>
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
-            <select name="producto" required>
-                <option value="">Seleccionar Producto...</option>
-                {% for p in productos %}
-                <option value="{{ p.nombre }}">{{ p.nombre }} (Stock actual: {{ p.stock }})</option>
-                {% endfor %}
-            </select>
+        <div class="form-compra">
+            <div style="grid-column: 1 / -1;">
+                <label>Producto (Elegí uno o escribí uno nuevo):</label>
+                <!-- Usamos un input con list para permitir escritura libre -->
+                <input list="lista-productos" name="producto" id="producto-input" placeholder="Escribí o seleccioná..." required style="width: 100%;">
+                <datalist id="lista-productos">
+                    {% for p in productos %}
+                    <option value="{{ p['nombre'] }}">
+                    {% endfor %}
+                </datalist>
+            </div>
+            
+            <input type="text" name="lugar" placeholder="Proveedor / Lugar" required>
+            <input type="text" name="direccion" placeholder="Dirección (Opcional)">
             <input type="number" name="cantidad" placeholder="Cantidad" required>
-            <input type="number" step="0.01" name="total" placeholder="Costo Total" required>
+            <input type="number" step="0.01" name="total" placeholder="Costo Total $" required>
         </div>
-        <button type="submit" style="background: #3b82f6; width: 100%; margin-top: 15px; font-weight: bold; padding: 12px;">
-            Cargar al Inventario
+        <button type="submit" style="background: #3b82f6; width: 100%; margin-top: 15px; font-weight: bold;">
+            📦 Registrar Ingreso de Mercadería
         </button>
     </form>
 </div>
 
-<hr style="opacity: 0.1; margin: 30px 0;">
-
-<h2>📄 Boletas de Entrada (Historial)</h2>
-<div class="grid-productos">
-    {% for h in historial %}
-    <div class="card card-compra">
-        <div style="display: flex; justify-content: space-between;">
-            <small style="color: #64748b;">{{ h.fecha }}</small>
-            <a href="/eliminar_compra/{{ h.id }}" onclick="return confirm('¿Anular compra? Se restará el stock.')" style="text-decoration: none;">❌</a>
-        </div>
-        <h3 style="margin: 10px 0 5px 0;">{{ h.lugar }}</h3>
-        <p style="font-size: 12px; color: #64748b; margin-bottom: 15px;">📍 {{ h.direccion }}</p>
-        
-        <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b>{{ h.producto }}</b>
-                <span style="font-size: 14px;">Cant: {{ h.cantidad }}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                <span class="badge-unitario">Costo x Unidad: ${{ (h.total / h.cantidad)|round(2) }}</span>
-                <b style="color: #22c55e; font-size: 18px;">${{ h.total }}</b>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+<h2 style="margin-top: 40px;">📜 Historial de Compras</h2>
+<div style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Total</th>
+                <th>Lugar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in historial %}
+            <tr>
+                <td>{{ c['fecha'] }}</td>
+                <td><b>{{ c['producto'] }}</b></td>
+                <td>{{ c['cantidad'] }}</td>
+                <td style="color: #ef4444;">-${{ c['total'] }}</td>
+                <td>{{ c['lugar'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 {% endblock %}
