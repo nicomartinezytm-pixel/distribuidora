@@ -101,19 +101,20 @@
 
         <form method="POST" action="/finalizar_venta">
 
+            <!-- 🔥 CLIENTE ESCRIBIBLE -->
             <label>Cliente:</label>
-            <select name="cliente" required>
-                {% for c in clientes %}
-                    <option value="{{ c[0] }}">
-                        {{ c[1] }} - {{ c[2] }}
-                    </option>
-                {% endfor %}
-            </select>
+            <input name="cliente_nombre" placeholder="Escribí el nombre del cliente" required>
+
+            <label>Teléfono (opcional):</label>
+            <input name="cliente_telefono" placeholder="Ej: 3541...">
+
+            <label>Dirección (opcional):</label>
+            <input name="cliente_direccion" placeholder="Dirección">
 
             <label>Total:</label>
             <input name="total" type="number" step="0.01" required>
 
-            <!-- carrito oculto (lo usas con JS si ya lo tenías) -->
+            <!-- carrito oculto -->
             <input type="hidden" name="carrito" value="[]">
 
             <button type="submit">Finalizar venta</button>
@@ -133,17 +134,9 @@
 <!-- BARRA INFERIOR -->
 <div class="bottom-nav">
 
-    <a href="/" class="nav-item">
-        🏠<span>Inicio</span>
-    </a>
-
-    <a href="/vender" class="nav-item">
-        💰<span>Vender</span>
-    </a>
-
-    <a href="/dashboard" class="nav-item">
-        📊<span>Stats</span>
-    </a>
+    <a href="/" class="nav-item">🏠<span>Inicio</span></a>
+    <a href="/vender" class="nav-item">💰<span>Vender</span></a>
+    <a href="/dashboard" class="nav-item">📊<span>Stats</span></a>
 
 </div>
 
